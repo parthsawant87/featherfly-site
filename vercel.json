@@ -1,4 +1,7 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false
+  "rewrites": [
+    { "source": "/eduscope/experiments", "destination": "/eduscope/experiments.html" },
+    { "source": "/eduscope", "destination": "/eduscope/index.html" },
+    { "source": "/sentinel", "destination": "/sentinel/index.html" }
+  ]
 }
