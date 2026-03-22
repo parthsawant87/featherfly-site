@@ -154,7 +154,7 @@ body{background:var(--w);color:var(--b);font-family:var(--ff);display:flex;flex-
     <div id="viewer-wrap">
       <!-- 3D cell viewer — SSE-connected, auto-updates on new specimen -->
       <iframe id="cell-viewer-iframe"
-        src="/eduscope/threejs_cell_viewer.html"
+        src=""
         style="width:100%;height:100%;border:none;border-radius:8px;background:#0a0c10;"
         title="3D Cell Viewer"
         onerror="this.style.display='none';document.getElementById('viewer-ph').style.display='flex';">
@@ -252,6 +252,7 @@ const PRACTICAL={
 const params=new URLSearchParams(window.location.search);
 const EXP_KEY=params.get('exp')||'ONION_CELL';
 const EXP=BIO[EXP_KEY]||BIO['ONION_CELL'];
+document.getElementById('cell-viewer-iframe').src='/eduscope/threejs_cell_viewer.html?specimen='+EXP_KEY;
 
 (function init(){
   document.getElementById('tb-exp').innerHTML=`Experiment: <strong>${EXP.name}</strong>`;
