@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>EduScope — Scanning</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--w:#ffffff;--b:#0a0a0a;--g:#f5f5f7;--g2:#e8e8ed;--g3:#6e6e73;--bd:#d2d2d7;--teal:#14b8a6;--teal2:#0d9488;--red:#e03c2c;--green:#22c55e;--gold:#f0a020;--ff:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--mono:'SF Mono','Fira Code',monospace;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--w);color:var(--b);font-family:var(--ff);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;}
+#topbar{height:48px;background:var(--b);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;}
+.tb-logo{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.01em;}
+.tb-logo span{color:var(--teal);}
+.tb-badge{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--teal);color:#fff;padding:2px 8px;border-radius:8px;}
+.tb-sep{color:rgba(255,255,255,.2);}
+#tb-exp{font-size:12px;color:rgba(255,255,255,.6);}
+#tb-exp strong{color:#fff;}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.tb-btn{font-size:11px;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.12);padding:3px 10px;border-radius:8px;cursor:pointer;transition:all .2s;}
+.tb-btn:hover{color:#fff;border-color:rgba(255,255,255,.3);}
+.dot-live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:bl 1.8s infinite;}
+@keyframes bl{0%,100%{opacity:1;}50%{opacity:.2;}}
+.tb-pod{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(255,255,255,.3);}
+#layout{flex:1;display:grid;grid-template-columns:272px 1fr 300px;overflow:hidden;}
+#left{border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden;}
+.ph{padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.ph h2{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g3);}
+#stream{flex:0 0 172px;background:#000;position:relative;overflow:hidden;}
+.s-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:rgba(255,255,255,.25);font-size:10px;font-family:var(--mono);}
+.s-ov svg{width:28px;height:28px;stroke:rgba(255,255,255,.15);fill:none;stroke-width:1;}
+.s-badge{position:absolute;top:8px;left:8px;background:var(--teal);color:#fff;font-size:8px;font-weight:700;letter-spacing:.1em;padding:2px 6px;border-radius:6px;}
+.s-conf{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;}
+#cap-btn{margin:10px 12px 0;padding:10px;background:var(--b);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s;flex-shrink:0;}
+#cap-btn:hover{background:var(--teal);}
+#cap-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+#verify-banner{margin:8px 12px 0;padding:9px 12px;border-radius:8px;font-size:11px;font-weight:600;display:none;align-items:center;gap:8px;flex-shrink:0;line-height:1.4;}
+.v-match{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#16a34a;}
+.v-miss{background:rgba(224,60,44,.08);border:1px solid rgba(224,60,44,.25);color:var(--red);}
+#rc{margin:8px 12px 0;border:1px solid var(--bd);border-radius:10px;overflow:hidden;flex-shrink:0;}
+.rc-hd{padding:8px 12px;background:var(--g);border-bottom:1px solid var(--bd);font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--g3);}
+.rc-bd{padding:11px;}
+.rc-name{font-size:17px;font-weight:700;letter-spacing:-.02em;margin-bottom:2px;}
+.rc-latin{font-size:10px;color:var(--g3);font-style:italic;margin-bottom:7px;}
+.rc-ch{display:inline-block;background:var(--b);color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:8px;margin-bottom:7px;}
+.cf-row{display:flex;justify-content:space-between;margin-bottom:3px;}
+.cf-row span,.cf-row strong{font-size:10px;color:var(--g3);}
+.cf-row strong{color:var(--b);}
+.cf-bar{height:2px;background:var(--g2);border-radius:2px;overflow:hidden;}
+.cf-fill{height:100%;background:var(--teal);border-radius:2px;transition:width .6s;}
+.rc-fact{font-size:10px;color:var(--g3);line-height:1.55;margin-top:7px;padding-top:7px;border-top:1px solid var(--bd);}
+.sc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+.sc-tag{font-size:9px;padding:2px 7px;border-radius:6px;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.2);color:var(--teal);}
+#rpt-btn{margin:8px 12px 0;padding:9px;background:var(--b);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px;transition:background .2s;flex-shrink:0;}
+#rpt-btn:hover{background:var(--teal);}
+#center{display:flex;flex-direction:column;overflow:hidden;background:#0a0c10;}
+.c-hd{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.c-hd h2{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);}
+#viewer-wrap{flex:1;display:flex;align-items:center;justify-content:center;}
+#viewer-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:rgba(255,255,255,.25);text-align:center;padding:32px;}
+.vph-icon{font-size:56px;}
+.vph-name{font-size:17px;font-weight:600;color:rgba(255,255,255,.5);}
+.vph-sub{font-size:11px;color:rgba(255,255,255,.2);line-height:1.6;}
+.vph-structs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px;}
+.vph-struct{font-size:10px;padding:3px 10px;border-radius:8px;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.18);color:rgba(20,184,166,.8);}
+.vph-stain{font-size:10px;color:rgba(255,255,255,.2);margin-top:10px;padding:6px 14px;border:1px solid rgba(255,255,255,.07);border-radius:8px;}
+#spec-pills{display:flex;gap:6px;padding:10px 14px;border-top:1px solid rgba(255,255,255,.07);overflow-x:auto;flex-shrink:0;}
+#spec-pills::-webkit-scrollbar{height:0;}
+.spec-pill{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:4px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.35);cursor:pointer;white-space:nowrap;background:none;transition:all .2s;}
+.spec-pill:hover,.spec-pill.act{border-color:var(--teal);color:var(--teal);background:rgba(20,184,166,.08);}
+#right{border-left:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden;}
+.tab-row{display:flex;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.tab{flex:1;padding:11px 8px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--g3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.tab.act{color:var(--b);border-bottom-color:var(--teal);}
+.tab-panel{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.tab-panel.act{display:flex;}
+#chat-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}
+#chat-body::-webkit-scrollbar{width:2px;}
+.msg{max-width:90%;padding:9px 11px;border-radius:10px;font-size:11px;line-height:1.65;}
+.msg.ai{background:var(--g);color:var(--b);align-self:flex-start;border-radius:3px 10px 10px 10px;}
+.msg.usr{background:var(--b);color:#fff;align-self:flex-end;border-radius:10px 10px 3px 10px;}
+.msg.rpt{background:var(--b);color:#fff;align-self:flex-start;border-radius:3px 10px 10px 10px;max-width:100%;width:100%;font-size:10px;}
+.typing span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--g3);animation:dt .9s infinite;}
+.typing span:nth-child(2){animation-delay:.15s;}.typing span:nth-child(3){animation-delay:.3s;}
+@keyframes dt{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-4px);}}
+#chat-inp-row{padding:8px 10px;border-top:1px solid var(--bd);display:flex;gap:6px;flex-shrink:0;}
+#chat-inp{flex:1;border:1.5px solid var(--bd);border-radius:8px;padding:7px 9px;font-size:11px;font-family:var(--ff);outline:none;resize:none;height:44px;transition:border-color .2s;}
+#chat-inp:focus{border-color:var(--teal);}
+#chat-send{background:var(--b);color:#fff;border:none;border-radius:8px;padding:0 10px;cursor:pointer;transition:background .2s;flex-shrink:0;}
+#chat-send:hover{background:var(--teal);}
+#chat-send svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+#quiz-panel{flex:1;overflow-y:auto;padding:14px;}
+.quiz-btn{width:100%;padding:10px;background:var(--b);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:12px;transition:background .2s;}
+.quiz-btn:hover{background:var(--teal);}
+.q-item{margin-bottom:14px;padding:12px;border:1.5px solid var(--bd);border-radius:10px;}
+.q-item.correct{border-color:var(--green);background:rgba(34,197,94,.04);}
+.q-item.wrong{border-color:var(--red);background:rgba(224,60,44,.04);}
+.q-text{font-size:12px;font-weight:600;margin-bottom:8px;line-height:1.5;}
+.q-opts{display:flex;flex-direction:column;gap:5px;}
+.q-opt{display:flex;align-items:flex-start;gap:7px;padding:7px 9px;border-radius:6px;border:1px solid var(--bd);cursor:pointer;font-size:11px;line-height:1.5;transition:all .15s;}
+.q-opt:hover{border-color:var(--b);background:var(--g);}
+.q-opt.selected.right{border-color:var(--green);background:rgba(34,197,94,.08);color:#16a34a;}
+.q-opt.selected.wrong{border-color:var(--red);background:rgba(224,60,44,.08);color:var(--red);}
+.opt-label{font-weight:700;min-width:14px;}
+.q-explain{font-size:11px;color:var(--g3);margin-top:7px;padding-top:7px;border-top:1px solid var(--bd);line-height:1.55;display:none;}
+.q-item.correct .q-explain,.q-item.wrong .q-explain{display:block;}
+#practical-panel{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.pr-input{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8px 10px;font-size:12px;font-family:var(--ff);outline:none;}
+.pr-input:focus{border-color:var(--teal);}
+.pr-btn{padding:10px;background:var(--b);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s;}
+.pr-btn:hover{background:var(--teal);}
+#pr-output{background:var(--g);border-radius:8px;padding:12px;font-size:10.5px;line-height:1.75;color:var(--b);white-space:pre-wrap;display:none;font-family:var(--mono);}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <span class="tb-logo">FEATHER<span>FLY</span></span>
+  <span class="tb-badge">EduScope</span>
+  <span class="tb-sep">·</span>
+  <span id="tb-exp">Loading…</span>
+  <div class="tb-right">
+    <div class="tb-pod"><div class="dot-live"></div><span id="pod-status">Connecting…</span></div>
+    <div class="tb-btn" onclick="location.href='04c_eduscope_experiments.html'">← Experiments</div>
+    <div class="tb-btn" onclick="location.href='04a_featherfly_in.html'">← Home</div>
+  </div>
+</div>
+<div id="layout">
+  <div id="left">
+    <div class="ph"><div class="dot-live"></div><h2>Microscope Feed</h2></div>
+    <div id="stream">
+      <div class="s-ov"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="5"/></svg><span>Connect Pod · 10.42.0.1:8080</span></div>
+      <div class="s-badge">LIVE</div><div class="s-conf" id="sconf">–</div>
+    </div>
+    <button id="cap-btn" onclick="capture()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>Start Scanning
+    </button>
+    <div id="verify-banner"></div>
+    <div id="rc">
+      <div class="rc-hd">Identified Specimen</div>
+      <div class="rc-bd">
+        <div class="rc-name" id="rc-name">—</div>
+        <div class="rc-latin" id="rc-latin">Place slide and scan</div>
+        <span class="rc-ch" id="rc-ch">NCERT Chapter</span>
+        <div class="cf-row"><span>Confidence</span><strong id="rc-cf">—</strong></div>
+        <div class="cf-bar"><div class="cf-fill" id="rc-cfill" style="width:0%"></div></div>
+        <div class="rc-fact" id="rc-fact">Capture a specimen to see facts here.</div>
+        <div class="sc-tags" id="rc-tags"></div>
+      </div>
+    </div>
+    <button id="rpt-btn" onclick="genReport()">📄 Generate AI Report</button>
+  </div>
+  <div id="center">
+    <div class="c-hd"><h2 id="c-title">3D Cell Viewer</h2></div>
+    <div id="viewer-wrap">
+      <!-- 3D cell viewer — src set by JS so it includes ?specimen=EXP_KEY -->
+      <iframe id="cell-viewer-iframe"
+        src=""
+        style="width:100%;height:100%;border:none;border-radius:8px;background:#0a0c10;"
+        title="3D Cell Viewer">
+      </iframe>
+      <div id="viewer-ph" style="display:none;">
+        <div class="vph-icon" id="vph-icon">🔬</div>
+        <div class="vph-name" id="vph-name">Waiting for scan…</div>
+        <div class="vph-sub" id="vph-sub">Place your slide and click Start Scanning.</div>
+        <div class="vph-structs" id="vph-structs"></div>
+        <div class="vph-stain" id="vph-stain"></div>
+      </div>
+    </div>
+    <div id="spec-pills"></div>
+  </div>
+  <div id="right">
+    <div class="tab-row">
+      <div class="tab act" id="t-tutor" onclick="switchTab('tutor')">AI Tutor</div>
+      <div class="tab" id="t-quiz" onclick="switchTab('quiz')">Quiz</div>
+      <div class="tab" id="t-practical" onclick="switchTab('practical')">Practical</div>
+    </div>
+    <div class="tab-panel act" id="tab-tutor">
+      <div id="chat-body"><div class="msg ai" id="welcome-msg">Loading experiment…</div></div>
+      <div id="chat-inp-row">
+        <textarea id="chat-inp" placeholder="Ask any biology question…" onkeydown="handleKey(event)"></textarea>
+        <button id="chat-send" onclick="sendChat()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-quiz"><div id="quiz-panel"><button class="quiz-btn" onclick="generateQuiz()">Generate Quiz on This Experiment</button><div id="quiz-items"></div></div></div>
+    <div class="tab-panel" id="tab-practical">
+      <div id="practical-panel">
+        <div style="font-size:11px;color:var(--g3);line-height:1.6;">Auto-fill your CBSE practical record.</div>
+        <input class="pr-input" id="pr-name" type="text" placeholder="Your name">
+        <input class="pr-input" id="pr-school" type="text" placeholder="School name">
+        <button class="pr-btn" onclick="genPractical()">Generate Practical Record</button>
+        <div id="pr-output"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const API=location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8001':'https://eduscope-api.featherfly.in';
+const BIO={
+  ONION_CELL:{name:'Onion Epidermal Cell',latin:'Allium cepa',ch:'Class 9 · Fundamental Unit of Life',structs:['Cell wall','Cell membrane','Large central vacuole','Nucleus','Cytoplasm'],fact:'The nucleus is pushed to the edge by the large central vacuole. No chloroplasts — onion scale leaves grow underground!',stain:'Iodine or Safranin',icon:'🧅',intro:'You\'re studying onion epidermal cells. Look for the rectangular brick-like shape. The nucleus should appear as a dark oval pushed to one edge by the large central vacuole. Ask me anything about cell structure!'},
+  CHEEK_CELL:{name:'Human Cheek Cell',latin:'Buccal epithelial',ch:'Class 9 · Fundamental Unit of Life',structs:['Cell membrane','Nucleus','Cytoplasm','Nuclear membrane'],fact:'No cell wall — animal cells rely on the flexible plasma membrane. You shed and replace these cells every 3–5 days!',stain:'Methylene blue',icon:'🫦',intro:'You\'re looking at your own animal cells! Notice there is NO cell wall. The nucleus should be centrally located and dark blue. What differences do you notice compared to plant cells?'},
+  BLOOD_SMEAR:{name:'Human Blood Smear',latin:'Homo sapiens',ch:'Class 11 · Body Fluids & Circulation',structs:['RBC (biconcave, no nucleus)','WBC (has nucleus)','Platelets'],fact:'Each RBC carries ~270 million haemoglobin molecules! Mature RBCs lose their nucleus to maximise oxygen-carrying space.',stain:'Leishman stain',icon:'🩸',intro:'Look for the abundant pink biconcave discs — those are RBCs (no nucleus). The larger cells with purple-blue nuclei are WBCs. The tiny fragments are platelets. Try to count how many RBCs per WBC — normally it\'s 600:1.'},
+  STOMATA:{name:'Stomata + Guard Cells',latin:'Leaf epidermis',ch:'Class 11 · Transport in Plants',structs:['Guard cells (pair)','Stoma (pore)','Chloroplasts in guard cells','Epidermal cells'],fact:'Guard cells are the ONLY epidermal cells with chloroplasts — they need ATP to pump K+ ions and open the pore.',stain:'Nail varnish peel or direct peel',icon:'🍃',intro:'Look for pairs of kidney-shaped guard cells with a pore between them. Can you spot the green chloroplasts inside the guard cells? Notice the surrounding epidermal cells have NO chloroplasts. Are the stomata open or closed?'},
+  AMOEBA:{name:'Amoeba proteus',latin:'Kingdom Protista',ch:'Class 8 · Microorganisms',structs:['Pseudopodia','Cell membrane','Nucleus','Food vacuoles','Contractile vacuole'],fact:'Amoeba has no fixed shape! Pond water may also contain bacteria and algae — scan different areas to find multiple organisms!',stain:'Unstained (live) or Iodine',icon:'🦠',intro:'You\'re exploring pond water — a complete ecosystem in one drop! Scan different areas of your slide. The model will tell you what organism is most visible in each frame. What can you find?'},
+  YEAST:{name:'Yeast (Saccharomyces)',latin:'Saccharomyces cerevisiae',ch:'Class 11 · Biological Classification',structs:['Mother cell','Bud (daughter cell)','Bud scar','Vacuole'],fact:'Wait 10 minutes after mixing yeast in sugar water — buds need time to form! Each parent cell can bud 20-30 times.',stain:'Methylene blue (live/dead)',icon:'🍺',intro:'You\'re watching asexual reproduction happen live! Look for oval yeast cells — some will have a smaller bud attached. That bud is a daughter cell forming. Can you count how many cells are currently budding?'},
+  BACTERIA:{name:'Bacteria (rod / bacillus)',latin:'Kingdom Monera',ch:'Class 8 / 11 · Microorganisms',structs:['Cell wall (peptidoglycan)','Nucleoid (no true nucleus)','Flagella','Pili'],fact:'One bacterium can become 2 billion in just 8 hours! Bacteria were the first life on Earth — 3.5 billion years ago.',stain:'Methylene blue or Gram stain',icon:'🦠',intro:'Look for tiny rod-shaped or spherical cells. At 400× they appear as dots or short rods. The random jiggling movement is Brownian motion — not actual swimming. What shape are your bacteria?'},
+  POLLEN:{name:'Pollen Grain',latin:'Male gametophyte',ch:'Class 12 · Sexual Reproduction in Plants',structs:['Exine (outer wall)','Intine (cellulose)','Vegetative cell','Generative cell','Germination pores'],fact:'Sporopollenin in the exine is the most resistant biological substance — pollen survives 10,000 years in fossils!',stain:'Acetocarmine or unstained',icon:'🌸',intro:'Look at the surface texture — the spiky or ridged outer wall is the exine made of sporopollenin. Can you spot the germination pores — small openings in the wall? What flower did you collect this pollen from?'},
+  FUNGI_HYPHAE:{name:'Fungal Hyphae (Rhizopus)',latin:'Kingdom Fungi',ch:'Class 10 · How Do Organisms Reproduce',structs:['Hyphae (filaments)','Sporangium (spore case)','Sporangiophore (stalk)','Rhizoids'],fact:'The world\'s largest organism is a honey fungus in Oregon covering 8.9 km²! The black dots on stalks are sporangia full of spores.',stain:'Cotton blue or unstained',icon:'🍄',intro:'Look for tangled white thread-like hyphae. Can you find the black dot at the top of a stalk? That\'s the sporangium — a bag of spores for asexual reproduction. How many sporangia can you count?'},
+};
+const TUTOR_KB={
+  pseudopodia:'Pseudopodia (false feet) are temporary cytoplasmic extensions in Amoeba used for movement and engulfing food particles (phagocytosis). The cytoplasm streams into the pseudopodium, pulling the organism forward.',
+  stomata:'Stomata open when guard cells absorb water (become turgid) due to K+ ion influx in light. At night or under water stress, K+ leaves, guard cells lose turgidity and close the pore.',
+  nucleus:'The nucleus is stained dark by methylene blue because it contains DNA (an acidic molecule) which has strong affinity for basic dyes. The cytoplasm stains lighter.',
+  'cell wall':'Plant cell walls are made of cellulose. Fungi have chitin. Bacteria have peptidoglycan. Animal cells have NO cell wall.',
+  vacuole:'The large central vacuole in plant cells maintains turgor pressure and pushes the nucleus to the cell edge.',
+  chloroplast:'Chloroplasts carry out photosynthesis. Found in guard cells but NOT other epidermal cells.',
+  budding:'In budding, the parent grows a smaller outgrowth which separates. Parent survives unchanged. Seen in yeast and Hydra.',
+  'binary fission':'Binary fission: parent divides into two identical daughter cells. Seen in bacteria and Amoeba. Bacteria can divide every 20 minutes.',
+  rbc:'RBCs are biconcave discs with no nucleus — lost during development to maximise haemoglobin. Each RBC lives ~120 days.',
+  wbc:'Five WBC types: Neutrophil, Eosinophil, Basophil, Monocyte, Lymphocyte. Remember: Never Eat Bad Mouldy Lettuce!',
+  photosynthesis:'6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂. Occurs in chloroplasts. Light reactions produce ATP. Calvin cycle fixes CO₂ into glucose.',
+};
+const QUIZBANK={
+  ONION_CELL:[{q:'Why is no chloroplast seen in onion scale leaf cells?',opts:['A. Cells are dead','B. No sunlight reaches underground scale leaves','C. Onion is not a plant','D. Chloroplasts are too small'],correct:'B',explain:'Onion scale leaves grow underground — no sunlight, no photosynthesis needed, no chloroplasts.'},{q:'What pushes the nucleus to the edge?',opts:['A. Cell wall','B. Vacuole','C. Cytoplasm','D. Nuclear membrane'],correct:'B',explain:'The large central vacuole pushes the nucleus to the periphery.'},{q:'What is the cell wall made of?',opts:['A. Chitin','B. Peptidoglycan','C. Cellulose','D. Sporopollenin'],correct:'C',explain:'Plant cell walls are made of cellulose.'},{q:'Which stain is best?',opts:['A. Gram stain','B. Acetocarmine','C. Iodine or Safranin','D. Leishman stain'],correct:'C',explain:'Iodine stains nucleus golden-brown. Safranin stains cell walls pink-red.'}],
+  CHEEK_CELL:[{q:'Why does the cheek cell have no cell wall?',opts:['A. It has dissolved','B. Animal cells lack cell walls','C. It is too small','D. Cheek cells are dead'],correct:'B',explain:'Animal cells do not have cell walls — they rely on the flexible plasma membrane.'},{q:'What stain is used?',opts:['A. Safranin','B. Cotton blue','C. Methylene blue','D. Acetocarmine'],correct:'C',explain:'Methylene blue stains nucleus (acidic DNA) dark blue.'}],
+  BLOOD_SMEAR:[{q:'Why do mature RBCs have no nucleus?',opts:['A. Lost during disease','B. To maximise haemoglobin content','C. All blood cells lack nuclei','D. Nucleus is too large'],correct:'B',explain:'RBCs lose nucleus during development to create maximum space for haemoglobin.'},{q:'How many types of WBCs?',opts:['A. 3','B. 4','C. 5','D. 6'],correct:'C',explain:'Five: Neutrophil, Eosinophil, Basophil, Monocyte, Lymphocyte — Never Eat Bad Mouldy Lettuce!'},{q:'What stain is used for blood smears?',opts:['A. Methylene blue','B. Iodine','C. Safranin','D. Leishman stain'],correct:'D',explain:'Leishman stain (methylene blue + eosin) stains RBCs pink and WBC nuclei purple-blue.'}],
+  STOMATA:[{q:'What opens and closes the stomata?',opts:['A. Epidermal cells','B. Xylem vessels','C. Guard cells','D. Mesophyll cells'],correct:'C',explain:'Guard cells control stomatal opening by changing turgor pressure through K+ movement.'},{q:'Why do guard cells have chloroplasts?',opts:['A. Guard cells are larger','B. Need ATP to pump K+ ions','C. Chloroplasts provide colour','D. Store food'],correct:'B',explain:'Guard cells need ATP from photosynthesis to actively pump K+ ions.'}],
+  YEAST:[{q:'What type of reproduction is budding?',opts:['A. Sexual','B. Asexual','C. Vegetative','D. Sporulation'],correct:'B',explain:'Budding is asexual — one parent, offspring genetically identical.'},{q:'What is a bud scar?',opts:['A. A disease mark','B. A ring left from a previous budding event','C. The nucleus position','D. A feeding structure'],correct:'B',explain:'Each time a yeast cell buds, a ring scar is left — you can count them to know how many times it has reproduced.'}],
+  AMOEBA:[{q:'What are pseudopodia used for?',opts:['A. Photosynthesis','B. Movement and engulfing food','C. Reproduction','D. Protection'],correct:'B',explain:'Pseudopodia are temporary extensions for amoeboid movement and phagocytosis.'},{q:'How does Amoeba reproduce?',opts:['A. Budding','B. Spore formation','C. Binary fission','D. Sexual reproduction'],correct:'C',explain:'Amoeba reproduces by binary fission — divides into two identical daughter cells.'}],
+  BACTERIA:[{q:'What is the bacterial cell wall made of?',opts:['A. Cellulose','B. Chitin','C. Peptidoglycan','D. Sporopollenin'],correct:'C',explain:'Bacterial cell walls are made of peptidoglycan (murein).'},{q:'Do bacteria have a true nucleus?',opts:['A. Yes, with nuclear membrane','B. No — they have a nucleoid','C. Only old bacteria do','D. Only rod-shaped bacteria do'],correct:'B',explain:'Bacteria are prokaryotes — DNA is in a nucleoid region, no membrane-bound nucleus.'}],
+  POLLEN:[{q:'What is the outer wall of pollen called?',opts:['A. Intine','B. Exine','C. Cuticle','D. Epidermis'],correct:'B',explain:'The exine is the tough outer wall made of sporopollenin.'},{q:'What is sporopollenin?',opts:['A. A protein','B. Pollen stain','C. A highly resistant substance in pollen exine','D. The inner pollen wall'],correct:'C',explain:'Sporopollenin is chemically very stable — pollen is preserved in fossils for thousands of years.'}],
+  FUNGI_HYPHAE:[{q:'What is the fungal cell wall made of?',opts:['A. Cellulose','B. Peptidoglycan','C. Chitin','D. Sporopollenin'],correct:'C',explain:'Fungal cell walls are made of chitin.'},{q:'What is a sporangium?',opts:['A. A feeding structure','B. A spore-containing case','C. A type of hypha','D. The root of the fungus'],correct:'B',explain:'A sporangium contains spores for asexual reproduction. In Rhizopus it appears as a black dot on a stalk.'}],
+};
+const PRACTICAL={
+  ONION_CELL:`AIM: To prepare a temporary stained mount of onion peel and observe plant cells.\n\nMATERIALS: Onion bulb, glass slide, coverslip, iodine solution, forceps, dropper, compound microscope.\n\nPROCEDURE:\n1. Peel a thin transparent layer from the inside of an onion scale leaf.\n2. Place on a clean glass slide in a drop of water.\n3. Add 1-2 drops of iodine solution.\n4. Lower a coverslip at an angle to avoid air bubbles.\n5. Blot excess stain. Observe under 10× then 40×.\n\nOBSERVATION:\nCells appear rectangular and brick-like. Each cell shows: cell wall, cell membrane, large central vacuole, nucleus (dark, pushed to edge). No chloroplasts visible.\n\nRESULT: Typical plant cell structure confirmed — cell wall, vacuole, and nucleus clearly visible.\n\nPRECAUTIONS:\n• Peel only the inner transparent layer.\n• Add coverslip slowly to prevent air bubbles.\n• Do not over-stain.`,
+  CHEEK_CELL:`AIM: To prepare a temporary stained mount of human cheek cells and observe animal cells.\n\nMATERIALS: Clean flat toothpick, methylene blue (0.1%), glass slide, coverslip, dropper.\n\nPROCEDURE:\n1. Gently scrape the inside of your cheek with a clean toothpick.\n2. Smear the collected material on a clean glass slide.\n3. Add 1 drop of methylene blue stain.\n4. Place coverslip gently, blot excess.\n5. Observe under low power then high power.\n\nOBSERVATION:\nIrregular flat polygon-shaped cells. No cell wall. Granular cytoplasm (light blue). Oval nucleus (dark blue, centrally located). No chloroplasts.\n\nRESULT: Human cheek cells show typical animal cell structure — flexible membrane, no rigid cell wall.\n\nPRECAUTIONS:\n• Use a clean toothpick — never share.\n• Use only dilute methylene blue (0.1%).`,
+  STOMATA:`AIM: To prepare a temporary mount of leaf epidermis to observe stomata and guard cells.\n\nMATERIALS: Fresh leaf, clear nail varnish, transparent tape, glass slide, safranin.\n\nPROCEDURE:\n1. Paint a thin layer of clear nail varnish on lower leaf surface.\n2. Allow to dry completely (2-3 minutes).\n3. Peel off the dried film using transparent tape.\n4. Lay the film on a glass slide, add a drop of safranin.\n5. Place coverslip and observe.\n\nOBSERVATION:\nStomata visible as pores between two kidney-shaped guard cells. Guard cells contain green chloroplasts. Surrounding epidermal cells have no chloroplasts.\n\nRESULT: Stomata clearly visible as pores flanked by paired guard cells with chloroplasts.\n\nPRECAUTIONS:\n• Use the lower leaf surface — it has more stomata.\n• Allow nail varnish to dry completely before peeling.`,
+
+  AMOEBA:`AIM: To observe Amoeba proteus under a microscope and identify its characteristic structures.\n\nMATERIALS: Fresh pond water (bottom layer), glass slide, coverslip, dropper, compound microscope, iodine solution (optional).\n\nPROCEDURE:\n1. Allow pond water sample to settle for 5 minutes.\n2. Collect a drop from the bottom layer using a dropper.\n3. Place on a clean glass slide and cover gently.\n4. Focus under 10× first to locate the organism, then 40×.\n5. Optional: add a drop of dilute iodine to stain nucleus (kills organism).\n\nOBSERVATION:\nIrregular, ever-changing shape. Pseudopodia (false feet) extending outward. Granular cytoplasm. Single large nucleus (dark after iodine staining). Food vacuoles may be visible. Contractile vacuole appears as a clear pulsating circle.\n\nRESULT: Amoeba is a unicellular protozoan showing characteristic movement by pseudopodia and visible nucleus in stained preparation.\n\nPRECAUTIONS:\n• Collect from bottom layer where Amoeba settles.\n• View within 10 minutes of collection.\n• Move the stage slowly — sudden movement disperses the organism.`,
+
+  BACTERIA:`AIM: To prepare a bacterial smear from yogurt and observe bacterial shapes using methylene blue stain.\n\nMATERIALS: Fresh yogurt, distilled water, methylene blue (1%), clean glass slide, toothpick, spirit lamp, compound microscope.\n\nPROCEDURE:\n1. Place one drop of distilled water on a clean glass slide.\n2. Pick a tiny amount of yogurt with a clean toothpick.\n3. Mix with the water drop to make a thin even smear.\n4. Allow to air-dry completely (5 minutes).\n5. Heat-fix: pass slide through flame 3 times quickly.\n6. Flood with methylene blue for 1 minute. Rinse gently with water. Air-dry.\n7. Observe under 40× magnification.\n\nOBSERVATION:\nTiny (1–5 µm) blue-stained rod-shaped cells (Lactobacillus bacilli) arranged in pairs or short chains. No nucleus visible — prokaryotic cells with no membrane-bound organelles.\n\nRESULT: Bacteria from yogurt are rod-shaped (bacillus form). Prokaryotic — no visible nucleus confirmed.\n\nPRECAUTIONS:\n• Heat-fix properly — bacteria must adhere to slide.\n• Rinse gently — do not wash cells off.\n• Use dilute methylene blue only (1%).`,
+
+  BLOOD_SMEAR:`AIM: To observe the different types of blood cells in a prepared human blood smear under microscope.\n\nMATERIALS: Prepared Leishman-stained human blood smear slide (commercial), compound microscope, immersion oil (for 100× objective), lens tissue.\n\nPROCEDURE:\n1. Place the prepared commercial blood smear slide on the microscope stage.\n2. Focus under 10× to locate the thin feathered edge of the smear.\n3. Switch to 40× to observe cells in detail.\n4. For WBC differentiation, use 100× oil immersion objective with one drop of oil.\n\nOBSERVATION:\nRBC (erythrocytes): Abundant, small pink biconcave discs, NO nucleus, ~7 µm diameter. WBC (leukocytes): Fewer, larger cells with dark purple nucleus — neutrophils (lobed nucleus), lymphocytes (large round nucleus), monocytes (kidney-shaped nucleus). Platelets: Very small irregular fragments scattered between cells.\n\nRESULT: Human blood contains three formed elements — RBCs (no nucleus), WBCs (5 types with nucleus), and platelets (cell fragments).\n\nPRECAUTIONS:\n• Use commercially prepared slides ONLY — do not prepare fresh blood smears in school.\n• Clean the objective with lens tissue after using immersion oil.\n• Handle glass slides carefully.`,
+
+  YEAST:`AIM: To observe yeast cells and the process of budding under a microscope.\n\nMATERIALS: Baker's yeast (1 g), 5% glucose solution (5 mL), glass slide, coverslip, methylene blue solution, dropper, microscope.\n\nPROCEDURE:\n1. Mix 1 g baker's yeast in 5 mL warm glucose solution (30°C).\n2. Keep in a warm place for 15–20 minutes to activate.\n3. Place one drop of yeast suspension on a clean glass slide.\n4. Add one drop of methylene blue (optional — dead cells stain blue).\n5. Cover gently with coverslip. Observe under 40× magnification.\n\nOBSERVATION:\nOval to spherical yeast cells, ~5–10 µm. Many parent cells show a smaller bud (daughter cell) attached at one end. Bud scar visible on some parent cells. Vacuole visible inside larger cells. Live cells remain colourless; dead cells stain blue with methylene blue.\n\nRESULT: Yeast reproduces asexually by budding — parent cell grows an outgrowth which detaches as a daughter cell.\n\nPRECAUTIONS:\n• Use warm (not hot) glucose solution — above 45°C kills yeast.\n• Allow minimum 15 minutes before viewing for budding to begin.\n• View within 30 minutes for active budding.`,
+
+  POLLEN:`AIM: To observe pollen grains from a flowering plant and study their structure under a microscope.\n\nMATERIALS: Fresh flower (hibiscus, mustard, or marigold), glass slide, coverslip, acetocarmine stain or water, dropper, microscope, forceps.\n\nPROCEDURE:\n1. Select a mature flower with visible yellow anthers.\n2. Tap the anther gently over a clean glass slide so pollen falls directly onto it.\n3. Add 1 drop of acetocarmine stain (or plain water for unstained view).\n4. Place coverslip gently and observe.\n5. Repeat with a second flower species to compare shapes.\n\nOBSERVATION:\nRound to oval pollen grains, 10–100 µm depending on plant species. Outer exine wall shows distinctive surface texture — smooth, spiny, or ridged depending on species. Germination pores (colpi) visible at 400× on some species. Acetocarmine stains the inner generative cell red.\n\nRESULT: Pollen grains from [species name] are [shape] in outline with [surface texture] exine wall. Each grain represents the male gametophyte.\n\nPRECAUTIONS:\n• Use fresh, fully open flowers.\n• Disperse pollen by tapping — do not blow.\n• Record the flower species in your practical record.`,
+
+  FUNGI_HYPHAE:`AIM: To observe fungal hyphae and sporangia of Rhizopus (bread mold) under a microscope.\n\nMATERIALS: Moist bread with black mold (Rhizopus, grown 3–4 days), glass slide, coverslip, cotton blue in lactic acid or water, toothpick, compound microscope.\n\nPROCEDURE:\n1. Leave moist bread at room temperature (25–30°C) for 3–4 days until black mold appears.\n2. Using a clean toothpick, tease a tiny portion of mold from the surface.\n3. Place in a drop of cotton blue solution on a glass slide.\n4. Tease apart gently with two toothpicks to separate hyphae.\n5. Cover carefully. Observe at 4× first, then 10×, then 40×.\n\nOBSERVATION:\nLong, thread-like hyphae (filaments) forming a tangled network. No cross-walls (coenocytic — multinucleate). Black spherical sporangia (spore cases) visible at tips of upright stalks (sporangiophores). Rhizoid-like anchoring structures at base. Cotton blue stains the fungal cell walls blue.\n\nRESULT: Bread mold (Rhizopus) shows coenocytic hyphae with terminal black sporangia. The fungal body (mycelium) is a mass of branched hyphae.\n\nPRECAUTIONS:\n• Handle mold carefully — wear gloves if available.\n• Tease hyphae gently — they break easily.\n• Dispose of mold-contaminated bread hygienically after the practical.`,
+};
+
+const params=new URLSearchParams(window.location.search);
+const EXP_KEY=params.get('exp')||'ONION_CELL';
+const EXP=BIO[EXP_KEY]||BIO['ONION_CELL'];
+
+(function init(){
+  document.getElementById('tb-exp').innerHTML=`Experiment: <strong>${EXP.name}</strong>`;
+  // Set iframe src with correct specimen so 3D model loads immediately
+  const vif = document.getElementById('cell-viewer-iframe');
+  if (vif) vif.src = 'threejs_cell_viewer.html?specimen=' + EXP_KEY;
+  document.getElementById('c-title').textContent='3D Cell Viewer — '+EXP.name;
+  document.getElementById('vph-icon').textContent=EXP.icon;
+  document.getElementById('vph-name').textContent=EXP.name;
+  document.getElementById('vph-sub').textContent=EXP.latin+' · '+EXP.ch;
+  document.getElementById('vph-structs').innerHTML=EXP.structs.map(s=>`<span class="vph-struct">${s}</span>`).join('');
+  document.getElementById('vph-stain').textContent='Stain: '+EXP.stain;
+  setTimeout(()=>{
+    document.getElementById('welcome-msg').innerHTML=`${EXP.icon} <strong>${EXP.name}</strong> loaded.<br><br>${EXP.intro}`;
+  },300);
+  const pills=document.getElementById('spec-pills');
+  Object.entries(BIO).forEach(([key,s])=>{
+    const btn=document.createElement('button');
+    btn.className='spec-pill'+(key===EXP_KEY?' act':'');
+    btn.textContent=s.icon+' '+s.name.split(' ')[0];
+    btn.onclick=()=>{document.querySelectorAll('.spec-pill').forEach(p=>p.classList.remove('act'));btn.classList.add('act');updateViewer(key);};
+    pills.appendChild(btn);
+  });
+})();
+
+function updateViewer(key){
+  const s=BIO[key];if(!s)return;
+  document.getElementById('vph-icon').textContent=s.icon;
+  document.getElementById('vph-name').textContent=s.name;
+  document.getElementById('vph-sub').textContent=s.latin+' · '+s.ch;
+  document.getElementById('vph-structs').innerHTML=s.structs.map(st=>`<span class="vph-struct">${st}</span>`).join('');
+  document.getElementById('vph-stain').textContent='Stain: '+s.stain;
+}
+
+function capture(){
+  const btn=document.getElementById('cap-btn');
+  btn.textContent='Scanning…';btn.disabled=true;
+  setTimeout(()=>{
+    const conf=0.78+Math.random()*0.2;
+    const keys=Object.keys(BIO);
+    const predicted=Math.random()<0.78?EXP_KEY:keys[Math.floor(Math.random()*keys.length)];
+    showResult(predicted,conf);
+    btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg> Scan Again';
+    btn.disabled=false;
+  },1400);
+}
+
+function showResult(key,conf){
+  const s=BIO[key];if(!s)return;
+  const match=key===EXP_KEY;
+  const banner=document.getElementById('verify-banner');
+  banner.style.display='flex';
+  if(match){
+    banner.className='verify-banner v-match';
+    banner.innerHTML=`✓ Confirmed — ${s.name} (${(conf*100).toFixed(0)}% confidence)`;
+  } else {
+    banner.className='verify-banner v-miss';
+    banner.innerHTML=`⚠ Looks like ${s.name} — expected ${EXP.name}. Check your slide.`;
+  }
+  document.getElementById('rc-name').textContent=s.name;
+  document.getElementById('rc-latin').textContent=s.latin;
+  document.getElementById('rc-ch').textContent=s.ch;
+  document.getElementById('rc-cf').textContent=(conf*100).toFixed(1)+'%';
+  document.getElementById('rc-cfill').style.width=(conf*100)+'%';
+  document.getElementById('rc-fact').textContent=s.fact;
+  document.getElementById('sconf').textContent=key+' '+(conf*100).toFixed(0)+'%';
+  document.getElementById('rc-tags').innerHTML=s.structs.slice(0,3).map(st=>`<span class="sc-tag">${st.split(' ')[0]}</span>`).join('');
+  updateViewer(key);
+  const rb=document.getElementById('rpt-btn');rb.style.display='flex';rb.textContent='📄 Generate AI Report';rb.style.background='var(--b)';rb.disabled=false;
+  if(match&&conf>=0.80){addAI(`✓ <strong>${s.name}</strong> confirmed at ${(conf*100).toFixed(0)}%. ${s.fact}`);}
+  else if(match){addAI(`I can see ${s.name} but confidence is ${(conf*100).toFixed(0)}%. Try adjusting focus or repositioning the slide for a clearer image.`);}
+  else{addAI(`⚠ This looks like <strong>${s.name}</strong> (${(conf*100).toFixed(0)}%), not ${EXP.name}. Check you have the correct slide under the microscope.`);}
+}
+
+function genReport(){
+  const btn=document.getElementById('rpt-btn');btn.textContent='Generating…';btn.disabled=true;
+  switchTab('tutor');
+  setTimeout(()=>{
+    const cf=document.getElementById('rc-cf').textContent;
+    addAI(`<div style="font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--g3);margin-bottom:5px;">AI SPECIMEN REPORT</div><strong>${EXP.icon} ${EXP.name}</strong> · <em>${EXP.latin}</em><br><strong>NCERT:</strong> ${EXP.ch}<br><strong>Confidence:</strong> ${cf}<br><br><strong>Key Structures:</strong><br>${EXP.structs.map(s=>'• '+s).join('<br>')}<br><br><strong>Stain:</strong> ${EXP.stain}<br><br><strong>Fact:</strong> ${EXP.fact}<br><br><span style="font-size:10px;color:var(--g3);">Ask me anything ↓</span>`,'rpt');
+    btn.textContent='✓ Report in Chat ↓';btn.style.background='var(--teal)';btn.disabled=false;
+    setTimeout(()=>{btn.textContent='📄 Generate AI Report';btn.style.background='var(--b)';},4000);
+  },1200);
+}
+
+function addAI(txt,type){
+  const body=document.getElementById('chat-body');
+  const d=document.createElement('div');d.className=type==='rpt'?'msg rpt':'msg ai';
+  d.innerHTML=txt.replace(/\n/g,'<br>');body.appendChild(d);body.scrollTop=body.scrollHeight;
+}
+function addUser(txt){const body=document.getElementById('chat-body');const d=document.createElement('div');d.className='msg usr';d.textContent=txt;body.appendChild(d);body.scrollTop=body.scrollHeight;}
+function addThink(){const body=document.getElementById('chat-body');const d=document.createElement('div');d.className='msg ai';d.id='think';d.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';body.appendChild(d);body.scrollTop=body.scrollHeight;}
+function rmThink(){document.getElementById('think')?.remove();}
+
+async function sendChat(){
+  const inp=document.getElementById('chat-inp'),q=inp.value.trim();if(!q)return;
+  inp.value='';addUser(q);addThink();
+  await new Promise(r=>setTimeout(r,700+Math.random()*400));rmThink();
+  const lower=q.toLowerCase();let ans=null;
+  for(const [k,v] of Object.entries(TUTOR_KB)){if(lower.includes(k)){ans=v;break;}}
+  if(!ans){
+    if(lower.includes('stain'))ans=`For ${EXP.name}, the recommended stain is: ${EXP.stain}.`;
+    else if(lower.includes('chapter')||lower.includes('ncert'))ans=`This specimen is covered in: ${EXP.ch}.`;
+    else if(lower.includes('struct')||lower.includes('see'))ans=`In ${EXP.name}, look for: ${EXP.structs.join(', ')}.`;
+    else ans=`You're studying ${EXP.name}. ${EXP.intro}`;
+  }
+  addAI(ans);
+}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
+
+let quizAnswered={};
+function generateQuiz(){
+  const qs=QUIZBANK[EXP_KEY]||QUIZBANK['ONION_CELL'];quizAnswered={};
+  document.getElementById('quiz-items').innerHTML=qs.map((q,i)=>`<div class="q-item" id="q${i}"><div class="q-text">${i+1}. ${q.q}</div><div class="q-opts">${q.opts.map((opt,oi)=>{const l=String.fromCharCode(65+oi);return`<div class="q-opt" onclick="answerQ(${i},'${l}','${q.correct}','${q.explain.replace(/'/g,"\\'")}')"><span class="opt-label">${l}</span><span>${opt.slice(3)}</span></div>`;}).join('')}</div><div class="q-explain" id="q${i}-exp"></div></div>`).join('');
+}
+function answerQ(qi,sel,correct,explain){
+  if(quizAnswered[qi])return;quizAnswered[qi]=true;
+  const item=document.getElementById('q'+qi),expEl=document.getElementById('q'+qi+'-exp');
+  const right=sel===correct;item.classList.add(right?'correct':'wrong');
+  expEl.textContent=(right?'✓ Correct! ':'✗ Incorrect. ')+explain;
+  item.querySelectorAll('.q-opt').forEach((el,oi)=>{if(String.fromCharCode(65+oi)===sel)el.classList.add('selected',right?'right':'wrong');});
+}
+
+function genPractical(){
+  const name=document.getElementById('pr-name').value.trim()||'Student';
+  const school=document.getElementById('pr-school').value.trim()||'School';
+  const template=PRACTICAL[EXP_KEY]||PRACTICAL['ONION_CELL'];
+  const out=document.getElementById('pr-output');out.style.display='block';
+  out.textContent=`BIOLOGY PRACTICAL RECORD\nStudent: ${name}    School: ${school}\nSpecimen: ${EXP.name}\nDate: ${new Date().toLocaleDateString('en-IN')}\n\n${template}`;
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('act'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('act'));
+  document.getElementById('t-'+tab).classList.add('act');
+  document.getElementById('tab-'+tab).classList.add('act');
+}
+
+// ── SSE LIVE STREAM — ~50ms push vs 3s polling ───────────────────────────
+let _es = null;
+function connectSSE() {
+  _es = new EventSource(API + '/stream');
+  _es.onmessage = function(e) {
+    try {
+      const d = JSON.parse(e.data);
+      if (!d.specimen || !BIO[d.specimen]) return;
+      document.getElementById('pod-status').textContent = 'Pod connected · ' + d.specimen;
+      animateCard();
+      showResult(d.specimen, d.confidence);
+      // smooth confidence bar
+      const bar = document.getElementById('rc-cfill');
+      if (bar) { bar.style.transition = 'width 0.6s cubic-bezier(0.4,0,0.2,1)'; bar.style.width = (d.confidence * 100) + '%'; }
+      // switch 3D viewer if loaded (standalone mode)
+      if (typeof switchCellModel === 'function') switchCellModel(d.specimen);
+      // postMessage to threejs iframe — no double SSE connection needed
+      const vif = document.getElementById('cell-viewer-iframe');
+      if (vif && vif.contentWindow) {
+        vif.contentWindow.postMessage({
+          type: 'FEATHERFLY_SPECIMEN',
+          specimen: d.specimen,
+          confidence: d.confidence,
+          chapter: (typeof BIO !== 'undefined' && BIO[d.specimen]) ? BIO[d.specimen].ch : ''
+        }, '*');
+      }
+      document.querySelector('.dot-live').style.background = '#22c55e';
+    } catch(err) {}
+  };
+  _es.onerror = function() {
+    document.getElementById('pod-status').textContent = 'Pod not connected';
+    document.querySelector('.dot-live').style.background = '#888';
+    _es.close();
+    // Fallback poll while SSE is down
+    const fb = setInterval(async () => {
+      try {
+        const r = await fetch(API + '/latest', {signal: AbortSignal.timeout(2000)});
+        const d = await r.json();
+        if (d.specimen && BIO[d.specimen]) {
+          document.getElementById('pod-status').textContent = 'Pod connected · ' + d.specimen;
+          animateCard(); showResult(d.specimen, d.confidence);
+        }
+      } catch(e) { document.getElementById('pod-status').textContent = 'Pod not connected'; }
+    }, 3000);
+    setTimeout(() => { clearInterval(fb); connectSSE();
+
+// When iframe finishes loading, send the initial specimen via postMessage
+// This handles the race condition between iframe load and EXP_KEY availability
+const _vif = document.getElementById('cell-viewer-iframe');
+if (_vif) {
+  _vif.addEventListener('load', function() {
+    setTimeout(() => {
+      if (_vif.contentWindow) {
+        _vif.contentWindow.postMessage({
+          type: 'FEATHERFLY_SPECIMEN',
+          specimen: EXP_KEY,
+          confidence: 0.95,
+          chapter: EXP.ch || ''
+        }, '*');
+      }
+    }, 200);  // small delay to let viewer JS initialise
+  });
+} }, 5000);
+  };
+  _es.onopen = function() { document.querySelector('.dot-live').style.background = '#22c55e'; };
+}
+connectSSE();
+
+// When iframe finishes loading, send the initial specimen via postMessage
+// This handles the race condition between iframe load and EXP_KEY availability
+const _vif = document.getElementById('cell-viewer-iframe');
+if (_vif) {
+  _vif.addEventListener('load', function() {
+    setTimeout(() => {
+      if (_vif.contentWindow) {
+        _vif.contentWindow.postMessage({
+          type: 'FEATHERFLY_SPECIMEN',
+          specimen: EXP_KEY,
+          confidence: 0.95,
+          chapter: EXP.ch || ''
+        }, '*');
+      }
+    }, 200);  // small delay to let viewer JS initialise
+  });
+}
+
+function animateCard() {
+  const rc = document.getElementById('result-card') || document.getElementById('rc');
+  if (!rc) return;
+  rc.style.transition = 'none'; rc.style.opacity = '0.3'; rc.style.transform = 'translateY(6px)';
+  requestAnimationFrame(() => {
+    rc.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    rc.style.opacity = '1'; rc.style.transform = 'translateY(0)';
+  });
+}
+</script>
+</body>
+</html>

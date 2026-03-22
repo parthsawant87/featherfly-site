@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SENTINEL — Featherfly</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--w:#fff;--b:#0a0a0a;--g:#f5f5f7;--g2:#e8e8ed;--g3:#6e6e73;--red:#e03c2c;--red2:#b02010;--bd:#d2d2d7;--ok:#22c55e;--warn:#f07020;--gold:#f0a020;--ff:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--mono:'SF Mono','Fira Code',monospace;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--w);color:var(--b);font-family:var(--ff);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;}
+
+/* GATE */
+#gate{position:fixed;inset:0;background:#0a0a0a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:28px;}
+.g-logo{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em;}
+.g-logo span{color:var(--red);}
+.g-head{text-align:center;}
+.g-head h1{font-size:28px;font-weight:700;color:#fff;letter-spacing:-.02em;margin-bottom:8px;}
+.g-head p{font-size:13px;color:rgba(255,255,255,.4);max-width:420px;line-height:1.6;}
+.g-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+.g-card{width:250px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:24px;cursor:pointer;transition:all .2s;user-select:none;}
+.g-card:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.22);transform:translateY(-2px);}
+.g-card.sel{border-color:var(--red);background:rgba(224,60,44,.12);}
+.g-icon{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.g-icon svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.6;}
+.g-ct{font-size:15px;font-weight:700;color:#fff;margin-bottom:5px;}
+.g-cd{font-size:11.5px;color:rgba(255,255,255,.4);line-height:1.6;margin-bottom:12px;}
+.g-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.g-tag{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.4);}
+#g-btn{background:var(--red);color:#fff;border:none;border-radius:10px;padding:13px 40px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;visibility:hidden;}
+#g-btn:hover{background:var(--red2);}
+#g-btn.show{visibility:visible;}
+
+/* TOPBAR */
+#topbar{height:48px;background:var(--b);display:none;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;}
+.tb-logo{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.01em;}
+.tb-logo span{color:var(--red);}
+.tb-badge{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--red);color:#fff;padding:2px 7px;border-radius:7px;}
+.tb-sw{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);padding:3px 10px;border-radius:7px;cursor:pointer;border:1px solid rgba(255,255,255,.1);transition:all .2s;}
+.tb-sw:hover{background:rgba(255,255,255,.14);}
+.tb-links{display:flex;}
+.tb-lnk{font-size:11px;color:rgba(255,255,255,.38);padding:0 12px;height:48px;display:flex;align-items:center;border-left:1px solid #1e1e1e;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.tb-lnk:hover,.tb-lnk.act{color:#fff;background:rgba(255,255,255,.06);}
+.tb-st{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.28);}
+.dot-live{width:6px;height:6px;border-radius:50%;background:var(--ok);animation:bl 1.8s infinite;}
+@keyframes bl{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* LAYOUT */
+#layout{flex:1;display:none;grid-template-columns:282px 1fr 288px;overflow:hidden;}
+
+/* LEFT */
+#left{border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden;}
+.ph{padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.ph h2{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g3);}
+#stream{flex:0 0 180px;background:#000;position:relative;overflow:hidden;}
+.s-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:rgba(255,255,255,.25);font-size:10px;font-family:var(--mono);}
+.s-ov svg{width:28px;height:28px;stroke:rgba(255,255,255,.15);fill:none;stroke-width:1;}
+.s-badge{position:absolute;top:8px;left:8px;background:var(--red);color:#fff;font-size:8px;font-weight:700;letter-spacing:.1em;padding:2px 6px;border-radius:6px;}
+.s-conf{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;}
+#cap-btn{margin:10px 12px 0;padding:10px;background:var(--b);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s;flex-shrink:0;}
+#cap-btn:hover{background:var(--red);}
+#cap-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+#rc{margin:10px 12px 0;border:1px solid var(--bd);border-radius:10px;overflow:hidden;flex-shrink:0;}
+.rc-hd{padding:8px 12px;background:var(--g);border-bottom:1px solid var(--bd);font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--g3);}
+.rc-bd{padding:11px;}
+.rc-ind{font-size:9px;font-weight:700;color:var(--g3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px;}
+.rc-cls{font-size:18px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;}
+.gr-row{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+.gr-b{font-size:11px;font-weight:800;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gAP{background:rgba(34,197,94,.1);color:#16a34a;border:2px solid rgba(34,197,94,.3);}
+.gA{background:rgba(34,197,94,.07);color:#22c55e;border:1.5px solid rgba(34,197,94,.2);}
+.gB{background:rgba(240,160,32,.08);color:#d97706;border:1.5px solid rgba(240,160,32,.25);}
+.gC{background:rgba(240,112,32,.08);color:var(--warn);border:1.5px solid rgba(240,112,32,.25);}
+.gD{background:rgba(224,60,44,.07);color:var(--red);border:1.5px solid rgba(224,60,44,.2);}
+.gF{background:rgba(120,20,20,.08);color:#991b1b;border:1.5px solid rgba(120,20,20,.25);}
+.gr-ql{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--g3);}
+.gr-pr{font-size:11px;font-weight:700;color:var(--b);}
+.rc-sev{display:inline-block;font-size:8px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:2px 7px;border-radius:6px;margin-bottom:5px;}
+.sc{background:rgba(224,60,44,.08);color:var(--red);}
+.sh{background:rgba(240,112,32,.08);color:var(--warn);}
+.sm{background:rgba(240,160,32,.08);color:var(--gold);}
+.sp{background:rgba(34,197,94,.08);color:var(--ok);}
+.sr2{background:rgba(130,130,160,.08);color:#8888bb;}
+.cf-rw{display:flex;justify-content:space-between;margin-bottom:3px;}
+.cf-rw span,.cf-rw strong{font-size:10px;color:var(--g3);}
+.cf-rw strong{color:var(--b);}
+.cf-bar{height:2px;background:var(--g2);border-radius:2px;overflow:hidden;}
+.cf-fill{height:100%;background:var(--b);border-radius:2px;transition:width .6s;}
+.rc-cause{font-size:10px;color:var(--g3);line-height:1.55;margin-top:7px;padding-top:7px;border-top:1px solid var(--bd);}
+.klarf-btn{margin:8px 12px 0;padding:8px;background:var(--g);color:var(--g3);border:1px dashed var(--bd);border-radius:8px;font-size:10px;font-weight:600;cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:7px;flex-shrink:0;}
+.klarf-btn svg{width:12px;height:12px;stroke:var(--g3);fill:none;stroke-width:2;}
+.kl-lock{font-size:8px;background:var(--gold);color:#000;padding:1px 5px;border-radius:6px;font-weight:700;}
+#scans{flex:1;overflow-y:auto;padding:5px 12px;}
+#scans::-webkit-scrollbar{width:2px;}
+#scans::-webkit-scrollbar-thumb{background:var(--g2);}
+.sr-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);cursor:pointer;}
+.sr-row:last-child{border:none;}
+.sr-sw{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+.sr-cls{font-size:10px;font-weight:600;flex:1;}
+.sr-gr{font-size:9px;font-weight:700;color:var(--g3);}
+.sr-cf{font-size:9px;color:var(--g3);font-family:var(--mono);}
+
+/* CENTER WAFER */
+#center{display:flex;flex-direction:column;overflow:hidden;}
+.c-hd{padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.c-hd h2{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g3);}
+#pat-badge{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:7px;background:rgba(240,112,32,.07);color:var(--warn);border:1px solid rgba(240,112,32,.18);display:none;}
+#wafer-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden;position:relative;}
+#wafer-svg{width:100%;height:100%;}
+#cpop{position:absolute;background:var(--b);color:#fff;border-radius:10px;padding:10px 13px;font-size:11px;line-height:1.7;pointer-events:none;opacity:0;transition:opacity .15s;z-index:100;min-width:200px;max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.25);}
+#cpop .cp-cls{font-size:13px;font-weight:700;margin-bottom:2px;}
+#cpop .cp-ind{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px;}
+#cpop .cp-box{font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.3);margin-top:5px;border-top:1px solid rgba(255,255,255,.1);padding-top:5px;}
+.bp{display:inline-block;background:rgba(224,60,44,.15);border:1px solid rgba(224,60,44,.35);color:#f08080;font-size:8px;font-family:var(--mono);padding:1px 5px;border-radius:3px;margin:2px 2px 0 0;}
+#stats-bar{display:flex;border-top:1px solid var(--bd);flex-shrink:0;}
+.st{flex:1;padding:10px 14px;border-right:1px solid var(--bd);text-align:center;}
+.st:last-child{border:none;}
+.st-v{font-size:19px;font-weight:700;letter-spacing:-.03em;}
+.st-l{font-size:9px;color:var(--g3);letter-spacing:.05em;text-transform:uppercase;margin-top:1px;}
+
+/* CENTER DIE */
+#die-center{display:none;flex-direction:column;overflow:hidden;}
+.die-wrap{flex:1;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+#die-canvas{display:block;max-width:100%;max-height:100%;}
+#die-ph{display:flex;flex-direction:column;align-items:center;gap:10px;color:rgba(255,255,255,.28);font-size:11px;}
+#die-ph svg{width:44px;height:44px;stroke:rgba(255,255,255,.14);fill:none;stroke-width:1;}
+.ov-btns{position:absolute;bottom:12px;right:12px;display:flex;gap:6px;}
+.ov-btn{background:rgba(0,0,0,.7);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.14);border-radius:6px;font-size:10px;font-weight:600;padding:5px 10px;cursor:pointer;transition:all .2s;}
+.ov-btn:hover,.ov-btn.act{background:var(--red);color:#fff;border-color:var(--red);}
+#die-stats{display:flex;border-top:1px solid var(--bd);flex-shrink:0;}
+
+/* RIGHT */
+#right{border-left:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden;}
+#econ{padding:10px 12px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.ec-ttl{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--g3);margin-bottom:7px;}
+.ec-row{display:flex;align-items:center;gap:6px;padding:3px 0;}
+.ec-g{font-size:10px;font-weight:800;width:20px;text-align:center;}
+.ec-bw{flex:1;height:4px;background:var(--g2);border-radius:2px;overflow:hidden;}
+.ec-b{height:100%;border-radius:2px;transition:width .8s;}
+.ec-n{font-size:9px;font-family:var(--mono);color:var(--g3);width:26px;text-align:right;}
+.ec-p{font-size:9px;color:var(--g3);width:58px;text-align:right;}
+.ec-tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:1px solid var(--bd);}
+.ec-tot-l{font-size:9px;color:var(--g3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+.ec-tot-v{font-size:13px;font-weight:700;color:var(--b);}
+#die-grade{display:none;padding:12px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.dgc-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.dgc-big{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;}
+.dgc-ql{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--g3);}
+.dgc-pr{font-size:14px;font-weight:700;color:var(--b);}
+.dgc-atl{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--g3);margin-bottom:4px;}
+.dgc-tag{display:inline-block;font-size:10px;padding:2px 7px;background:var(--g);border:1px solid var(--bd);border-radius:10px;margin:2px 2px 0 0;}
+#die-dtbl{display:none;border-bottom:1px solid var(--bd);flex-shrink:0;max-height:155px;overflow-y:auto;padding:8px 12px;}
+#die-dtbl::-webkit-scrollbar{width:2px;}
+.dt-hd{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--g3);margin-bottom:6px;}
+.dt-row{padding:5px 0;border-bottom:1px solid var(--bd);}
+.dt-row:last-child{border:none;}
+.dt-top{display:flex;align-items:center;gap:5px;margin-bottom:1px;}
+.dt-n{font-size:9px;font-family:var(--mono);color:var(--g3);}
+.dt-c{font-size:11px;font-weight:700;}
+.dt-cf{font-size:9px;font-family:var(--mono);color:var(--g3);margin-left:auto;}
+.dt-ind{font-size:9px;color:var(--g3);}
+#legend{display:flex;flex-wrap:wrap;gap:5px;padding:7px 12px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.leg{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--g3);}
+.leg-sw{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+#chat-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px;}
+#chat-body::-webkit-scrollbar{width:2px;}
+.msg{max-width:92%;padding:8px 10px;border-radius:10px;font-size:11px;line-height:1.6;}
+.msg.ai{background:var(--g);color:var(--b);align-self:flex-start;border-radius:3px 10px 10px 10px;}
+.msg.usr{background:var(--b);color:#fff;align-self:flex-end;border-radius:10px 10px 3px 10px;}
+.msg.rpt{background:var(--b);color:#fff;align-self:flex-start;border-radius:3px 10px 10px 10px;max-width:100%;width:100%;font-size:10px;}
+#chat-inp-row{padding:8px 10px;border-top:1px solid var(--bd);display:flex;gap:6px;flex-shrink:0;}
+#chat-inp{flex:1;border:1.5px solid var(--bd);border-radius:8px;padding:7px 9px;font-size:11px;font-family:var(--ff);outline:none;resize:none;height:46px;transition:border-color .2s;}
+#chat-inp:focus{border-color:var(--b);}
+#chat-send{background:var(--b);color:#fff;border:none;border-radius:8px;padding:0 10px;cursor:pointer;transition:background .2s;flex-shrink:0;}
+#chat-send:hover{background:var(--red);}
+#chat-send svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+.typing span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--g3);animation:dt .9s infinite;}
+.typing span:nth-child(2){animation-delay:.15s;}
+.typing span:nth-child(3){animation-delay:.3s;}
+@keyframes dt{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-4px);}}
+
+/* PRICING MODAL */
+#pm{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8888;align-items:center;justify-content:center;}
+#pm.open{display:flex;}
+.pm-box{background:var(--w);border-radius:16px;padding:26px;max-width:800px;width:94%;max-height:90vh;overflow-y:auto;}
+.pm-ttl{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
+.pm-sub{font-size:12px;color:var(--g3);margin-bottom:18px;}
+.pm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:14px;}
+.pm-card{border:1.5px solid var(--bd);border-radius:12px;overflow:hidden;}
+.pm-card.feat{border-color:var(--b);border-width:2px;}
+.pm-ch{padding:16px 16px 12px;}
+.pm-card.feat .pm-ch{background:var(--b);}
+.pm-tier{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#555;margin-bottom:5px;}
+.pm-card.feat .pm-tier{color:rgba(255,255,255,.5);}
+.pm-price{font-size:24px;font-weight:800;letter-spacing:-.03em;color:var(--b);}
+.pm-card.feat .pm-price{color:#fff;}
+.pm-price span{font-size:12px;font-weight:400;color:#666;}
+.pm-card.feat .pm-price span{color:rgba(255,255,255,.4);}
+.pm-desc{font-size:11px;color:#555;margin-top:3px;line-height:1.5;}
+.pm-card.feat .pm-desc{color:rgba(255,255,255,.55);}
+.pm-cb{padding:0 16px 14px;background:var(--w);}
+.pm-card.feat .pm-cb{background:var(--b);}
+.pm-fl{list-style:none;display:flex;flex-direction:column;gap:6px;margin:10px 0;}
+.pm-fl li{font-size:11px;color:#333;display:flex;align-items:flex-start;gap:6px;line-height:1.5;}
+.pm-fl li::before{content:'✓';color:var(--b);font-weight:700;font-size:9px;width:15px;height:15px;min-width:15px;background:#e8e8ed;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px;flex-shrink:0;}
+.pm-card.feat .pm-fl li{color:rgba(255,255,255,.85);}
+.pm-card.feat .pm-fl li::before{color:#fff;background:rgba(255,255,255,.16);}
+.pm-fl li.lk{color:#bbb;}
+.pm-fl li.lk::before{content:'↑';color:#bbb;background:#f0f0f0;font-size:8px;}
+.pm-card.feat .pm-fl li.lk{color:rgba(255,255,255,.28);}
+.pm-card.feat .pm-fl li.lk::before{color:rgba(255,255,255,.3);background:rgba(255,255,255,.07);}
+.pm-btn{width:100%;padding:9px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--b);background:var(--w);color:var(--b);transition:all .2s;}
+.pm-btn:hover{background:var(--b);color:#fff;}
+.pm-card.feat .pm-btn{background:var(--red);color:#fff;border-color:var(--red);}
+.pm-card.feat .pm-btn:hover{background:var(--red2);}
+.pm-inst{border:1.5px solid #bae0f7;border-radius:12px;padding:16px;background:#f0f9ff;margin-bottom:12px;}
+.pm-inst-ttl{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#185fa5;margin-bottom:10px;}
+.pm-inst-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.pm-inst-card{background:#fff;border:1px solid #bae0f7;border-radius:8px;padding:10px;}
+.pm-inst-pr{font-size:14px;font-weight:800;color:#185fa5;}
+.pm-inst-pr span{font-size:10px;font-weight:400;color:#5a9fd4;}
+.pm-inst-d{font-size:10px;color:#555;margin-top:2px;}
+.pm-inst-note{font-size:11px;color:#444;margin-bottom:8px;}
+.pm-inst-btn{width:100%;padding:8px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #185fa5;color:#185fa5;background:transparent;transition:all .2s;}
+.pm-inst-btn:hover{background:#185fa5;color:#fff;}
+.pm-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:var(--g3);margin-top:-4px;}
+.pm-note{text-align:center;font-size:11px;color:#555;}
+.pm-ann{background:#f0f9ff;border:1px solid #bae0f7;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.pm-ann-l{font-size:12px;font-weight:600;color:#185fa5;}
+.pm-ann-p{font-size:11px;color:var(--g3);}
+.pm-ann-s{font-size:12px;font-weight:700;color:#185fa5;white-space:nowrap;margin-left:12px;}
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate">
+  <div class="g-logo">FEATHER<span>FLY</span> · SENTINEL</div>
+  <div class="g-head">
+    <h1>What are you inspecting?</h1>
+    <p>Select your inspection mode. Same hardware — different analysis pipeline and report.</p>
+  </div>
+  <div class="g-cards">
+    <div class="g-card" id="gc-wafer" onclick="selMode('wafer')">
+      <div class="g-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/></svg></div>
+      <div class="g-ct">Wafer Inspection</div>
+      <div class="g-cd">Full wafer or section. Generates die-grid map, yield calculation, pattern detection, and economic report.</div>
+      <div class="g-tags"><span class="g-tag">D3 Wafer Map</span><span class="g-tag">Yield</span><span class="g-tag">Pattern</span><span class="g-tag">YOLOv8</span></div>
+    </div>
+    <div class="g-card" id="gc-die" onclick="selMode('die')">
+      <div class="g-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="3" height="3" rx="1"/><rect x="13" y="8" width="3" height="3" rx="1"/><rect x="8" y="13" width="3" height="3" rx="1"/></svg></div>
+      <div class="g-ct">Single Die / Chip</div>
+      <div class="g-cd">One singulated chip. Annotated image with bounding boxes, grade A+–F, market value, and application matching.</div>
+      <div class="g-tags"><span class="g-tag">YOLOv8 Overlay</span><span class="g-tag">Grade Card</span><span class="g-tag">Market Value</span></div>
+    </div>
+  </div>
+  <button id="g-btn" onclick="launch()">Enter SENTINEL →</button>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <span class="tb-logo">FEATHER<span>FLY</span></span>
+  <span class="tb-badge">SENTINEL</span>
+  <button class="tb-sw" onclick="resetGate()">⟳ Switch Mode</button>
+  <div class="tb-links">
+    <div class="tb-lnk act">Dashboard</div>
+    <div class="tb-lnk">History</div>
+    <div class="tb-lnk" onclick="openPM()">Pricing</div>
+    <div class="tb-lnk" onclick="location.href='04a_featherfly_in.html'">← Home</div>
+  </div>
+  <div class="tb-st"><div class="dot-live"></div><span id="tb-lbl">Mode</span> · sentinel_int8.tflite</div>
+</div>
+
+<div id="layout">
+  <!-- LEFT PANEL -->
+  <div id="left">
+    <div class="ph"><div class="dot-live"></div><h2>Live Feed</h2></div>
+    <div id="stream">
+      <div class="s-ov">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="5"/></svg>
+        <span>Connect pod · 10.42.0.1:8080</span>
+      </div>
+      <div class="s-badge">LIVE</div>
+      <div class="s-conf" id="sconf">–</div>
+    </div>
+    <button id="cap-btn" onclick="capture()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
+      Capture &amp; Identify
+    </button>
+    <div id="rc">
+      <div class="rc-hd">Last Classification</div>
+      <div class="rc-bd">
+        <div class="rc-ind" id="rc-ind">—</div>
+        <div class="rc-cls" id="rc-cls">—</div>
+        <div class="gr-row">
+          <div class="gr-b gA" id="rc-gbadge">—</div>
+          <div><div class="gr-ql" id="rc-ql">Quality Level</div><div class="gr-pr" id="rc-pr">—</div></div>
+        </div>
+        <div id="rc-sev"></div>
+        <div class="cf-rw"><span>Confidence</span><strong id="rc-cf">—</strong></div>
+        <div class="cf-bar"><div class="cf-fill" id="rc-cfill" style="width:0%"></div></div>
+        <div class="rc-cause" id="rc-cause">Place a slide and capture to begin.</div>
+        <button id="rpt-btn" onclick="genReport()" style="display:none;margin-top:10px;width:100%;padding:9px;background:var(--b);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px;transition:background .2s;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+          Generate AI Report
+        </button>
+      </div>
+    </div>
+    <div class="klarf-btn">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Export KLARF <span class="kl-lock">PRO</span>
+    </div>
+    <div class="ph" style="margin-top:8px;"><h2>Recent Scans</h2></div>
+    <div id="scans"></div>
+  </div>
+
+  <!-- CENTER WAFER -->
+  <div id="center">
+    <div class="c-hd">
+      <h2>Wafer Map — Die Grid</h2>
+      <div id="pat-badge"></div>
+      <span style="margin-left:auto;font-size:10px;color:var(--g3);">Click any die · hover for details</span>
+    </div>
+    <div id="wafer-wrap"><svg id="wafer-svg"></svg><div id="cpop"></div></div>
+    <div id="stats-bar">
+      <div class="st"><div class="st-v" id="st-yield">—</div><div class="st-l">Yield</div></div>
+      <div class="st"><div class="st-v" id="st-total">0</div><div class="st-l">Dies Scanned</div></div>
+      <div class="st"><div class="st-v" style="color:var(--red);" id="st-defects">0</div><div class="st-l">Defects</div></div>
+      <div class="st"><div class="st-v" style="font-size:12px;" id="st-dom">—</div><div class="st-l">Dominant Defect</div></div>
+    </div>
+  </div>
+
+  <!-- CENTER DIE -->
+  <div id="die-center">
+    <div class="c-hd">
+      <h2>Die Image — YOLOv8 Detection</h2>
+      <span style="margin-left:auto;font-size:10px;color:var(--g3);">Bounding boxes show exact defect locations</span>
+    </div>
+    <div class="die-wrap">
+      <canvas id="die-canvas" style="display:none;"></canvas>
+      <div id="die-ph"><svg viewBox="0 0 48 48"><rect x="8" y="8" width="32" height="32" rx="3" stroke-width="1.5"/><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="26" y="16" width="6" height="6" rx="1"/><rect x="16" y="26" width="6" height="6" rx="1"/></svg><span>Capture a die to see detection</span></div>
+      <div class="ov-btns">
+        <button class="ov-btn act" id="btn-bb" onclick="setOv('bbox')">YOLOv8 Boxes</button>
+        <button class="ov-btn" id="btn-hm" onclick="setOv('heatmap')">Grad-CAM</button>
+      </div>
+      <div style="font-size:8px;color:var(--g3);padding:3px 8px 4px;text-align:center;line-height:1.4;">Demo: bounding boxes show production output format — real YOLOv8 in production.</div>
+    </div>
+    <div id="die-stats">
+      <div class="st"><div class="st-v" style="color:var(--red);" id="ds-def">0</div><div class="st-l">Defects</div></div>
+      <div class="st"><div class="st-v" id="ds-gr">—</div><div class="st-l">Grade</div></div>
+      <div class="st"><div class="st-v" style="font-size:14px;" id="ds-cf">—</div><div class="st-l">Confidence</div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right">
+    <div class="ph"><h2>Claude AI — SENTINEL</h2></div>
+    <div id="econ"><div class="ec-ttl">Economic Grade Distribution</div><div id="ec-rows"><div style="font-size:10px;color:var(--g3);">Run a scan to see breakdown</div></div></div>
+    <div id="die-grade">
+      <div class="dgc-row">
+        <div class="dgc-big gA" id="dgc-b">—</div>
+        <div><div class="dgc-ql" id="dgc-ql">Quality Level</div><div class="dgc-pr" id="dgc-pr">—</div></div>
+      </div>
+      <div class="dgc-atl">Recommended Applications</div>
+      <div id="dgc-apps">—</div>
+    </div>
+    <div id="die-dtbl"><div class="dt-hd">YOLOv8 Detections</div><div id="dt-rows"><div style="font-size:11px;color:var(--g3);">Capture a die to see detections</div></div></div>
+    <div id="legend">
+      <div class="leg"><div class="leg-sw" style="background:#e03c2c"></div>Killer</div>
+      <div class="leg"><div class="leg-sw" style="background:#f07020"></div>Pot.Killer</div>
+      <div class="leg"><div class="leg-sw" style="background:#f0a020"></div>Nuisance</div>
+      <div class="leg"><div class="leg-sw" style="background:#22c55e"></div>Pass</div>
+      <div class="leg"><div class="leg-sw" style="background:#9090a0"></div>Review</div>
+    </div>
+    <!-- SPC STATUS WIDGET -->
+    <div id="spc-widget" style="margin:0 0 8px;padding:12px 14px;background:rgba(0,0,0,.04);border:1px solid var(--bd);border-radius:8px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g3);margin-bottom:8px;">SPC Process Monitor</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div style="text-align:center;"><div id="spc-status-val" style="font-size:12px;font-weight:700;color:var(--g3);">—</div><div style="font-size:8px;color:var(--g3);margin-top:2px;">Status</div></div>
+        <div style="text-align:center;"><div id="spc-cls-val" style="font-size:12px;font-weight:700;color:var(--b);">—</div><div style="font-size:8px;color:var(--g3);margin-top:2px;">Last class</div></div>
+        <div style="text-align:center;"><div id="spc-conf-val" style="font-size:12px;font-weight:700;color:var(--b);">—</div><div style="font-size:8px;color:var(--g3);margin-top:2px;">Confidence</div></div>
+      </div>
+      <div style="height:4px;background:var(--g2);border-radius:4px;overflow:hidden;"><div id="spc-conf-bar" style="height:100%;width:0%;background:var(--g3);border-radius:4px;transition:width 0.6s ease;"></div></div>
+      <div style="font-size:8.5px;color:var(--g3);margin-top:5px;">EWMA drift detection · alerts in logs/spc_alerts.json · runs every 5 min via cron</div>
+    </div>
+    <div id="chat-body">
+      <div class="msg ai">SENTINEL ready. Ask about defect classes, yield, ADC types, process root causes, grading, or KLARF. Click any die on the wafer map for instant analysis.</div>
+    </div>
+    <div id="chat-inp-row">
+      <textarea id="chat-inp" placeholder="Ask about defects, yield, RCA, grading…" onkeydown="handleKey(event)"></textarea>
+      <button id="chat-send" onclick="sendChat()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING MODAL -->
+<div id="pm">
+  <div class="pm-box">
+    <button class="pm-close" onclick="closePM()">×</button>
+    <div class="pm-ttl">SENTINEL Pricing</div>
+    <div class="pm-sub">All plans include 30-day free trial. Hardware (WhiteMouse Pod ₹6,000) sold separately.</div>
+    <div class="pm-ann"><div><div class="pm-ann-l">Annual plans — 2 months free</div><div class="pm-ann-p">Starter ₹9,500/yr · Pro ₹24,000/yr · Enterprise ₹79,999/yr</div></div><span class="pm-ann-s">Save ~17%</span></div>
+    <div class="pm-grid">
+      <div class="pm-card">
+        <div class="pm-ch"><div class="pm-tier">Starter</div><div class="pm-price">₹999<span>/month</span></div><div class="pm-desc">College labs, small PCB shops, researchers.</div></div>
+        <div class="pm-cb"><ul class="pm-fl"><li>500 die inspections/month</li><li>20 wafer scans/month</li><li>YOLOv8 bounding box overlay</li><li>9 ADC classes + grade A+–F</li><li>Market value estimate per die</li><li class="lk">Claude AI reports — Pro+</li><li class="lk">KLARF export — Pro+</li></ul><button class="pm-btn">Start 30-day Trial</button></div>
+      </div>
+      <div class="pm-card feat">
+        <div class="pm-ch"><div class="pm-tier">● Most Popular — Pro</div><div class="pm-price">₹2,499<span>/month</span></div><div class="pm-desc">Quality labs, MSME manufacturers, engineering teams.</div></div>
+        <div class="pm-cb"><ul class="pm-fl"><li>3,000 die inspections/month</li><li>100 wafer scans/month</li><li>YOLOv8 + Grad-CAM overlay</li><li>Claude AI inspection reports</li><li>Grade + pricing in every report</li><li>Wafer pattern detection</li><li>KLARF file export</li><li>FastAPI access</li></ul><button class="pm-btn">Start 30-day Trial</button></div>
+      </div>
+      <div class="pm-card">
+        <div class="pm-ch"><div class="pm-tier">Enterprise</div><div class="pm-price">₹7,999<span>/month</span></div><div class="pm-desc">Fabs, multi-device, custom integrations.</div></div>
+        <div class="pm-cb"><ul class="pm-fl"><li>Unlimited inspections</li><li>All Pro features</li><li>Custom defect class training</li><li>MES/ERP integration</li><li>Multi-device dashboard</li><li>Priority support — 4hr SLA</li><li>On-premise deployment</li></ul><button class="pm-btn">Contact Us</button></div>
+      </div>
+    </div>
+    <div class="pm-inst">
+      <div class="pm-inst-ttl">Institutional / School License</div>
+      <div class="pm-inst-grid">
+        <div class="pm-inst-card"><div class="pm-inst-pr">₹3,600<span>/device/year</span></div><div class="pm-inst-d">Per Pod. SENTINEL + EduScope included.</div></div>
+        <div class="pm-inst-card"><div class="pm-inst-pr">₹9,600<span>/campus/year</span></div><div class="pm-inst-d">Unlimited Pods at one campus.</div></div>
+        <div class="pm-inst-card"><div class="pm-inst-pr">₹1,800<span>/device/year</span></div><div class="pm-inst-d">Government school subsidised rate.</div></div>
+      </div>
+      <div class="pm-inst-note">All plans: Claude AI · KLARF export · annual model update · onboarding. Contact <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5427373c3b3b382714323135203c312632382d7a3d3a">[email&#160;protected]</a></strong></div>
+      <button class="pm-inst-btn">Request Purchase Order</button>
+    </div>
+    <div class="pm-note">No credit card required to start trial.</div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+const API=location.hostname==='localhost'?'http://localhost:8000':'https://sentinel-api.featherfly.in';
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ACTION REQUIRED: Add /stream SSE endpoint to api_server_sentinel.py
+   The dashboard connects via EventSource(API+'/stream').
+   File 01 api_server_sentinel.py does NOT include this endpoint.
+   Add this block to api_server_sentinel.py right before the /latest route:
+
+   import asyncio, json
+   from fastapi.responses import StreamingResponse
+   _sse_subscribers = []
+
+   async def _notify_sse(result: dict):
+       dead = []
+       for q in _sse_subscribers:
+           try: await q.put(result)
+           except: dead.append(q)
+       for q in dead: _sse_subscribers.remove(q)
+
+   @app.get("/stream")
+   async def sse_stream():
+       queue = asyncio.Queue()
+       _sse_subscribers.append(queue)
+       async def gen():
+           yield ": heartbeat\n\n"
+           if _latest_result: yield f"data: {json.dumps(_latest_result)}\n\n"
+           try:
+               while True:
+                   try:
+                       result = await asyncio.wait_for(queue.get(), timeout=15.0)
+                       yield f"data: {json.dumps(result)}\n\n"
+                   except asyncio.TimeoutError:
+                       yield ": heartbeat\n\n"
+           except asyncio.CancelledError:
+               _sse_subscribers.remove(queue); raise
+       return StreamingResponse(gen(), media_type="text/event-stream",
+           headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
+
+   Then in your /predict handler, after _latest_result = result, add:
+       await _notify_sse(result)
+
+   Without this, EventSource fires onerror immediately and falls back to polling.
+   ─────────────────────────────────────────────────────────────────────────── */
+const CL={BRIDGE:'#e03c2c',CRACK:'#b02010',VIA:'#d02820',OPEN:'#c02020',PARTICLE:'#f07020',CMP:'#f0a020',LER:'#e8c830',OTHERS:'#9090a0',CLEAN:'#22c55e'};
+const IND={BRIDGE:'Conductive Bridge / Metal Short',CRACK:'Mechanical Fracture / Die Crack',VIA:'Via Open / Contact Void',OPEN:'Metal Line Open / Trace Discontinuity',PARTICLE:'Foreign Material Contamination',CMP:'Planarization Non-Uniformity',LER:'Line Width Roughness',OTHERS:'Unclassified / Nuisance',CLEAN:'Pass — No Defect Detected'};
+const ADC={BRIDGE:'Killer',CRACK:'Potential Killer',VIA:'Killer',OPEN:'Killer',PARTICLE:'High (location-dependent)',CMP:'Medium',LER:'Medium',OTHERS:'Review',CLEAN:'Pass'};
+const SEV={BRIDGE:'CRITICAL',CRACK:'CRITICAL',VIA:'CRITICAL',OPEN:'CRITICAL',PARTICLE:'HIGH',CMP:'MEDIUM',LER:'MEDIUM',OTHERS:'REVIEW',CLEAN:'PASS'};
+const SC={CRITICAL:'sc',HIGH:'sh',MEDIUM:'sm',PASS:'sp',REVIEW:'sr2'};
+const CS={BRIDGE:'Litho over-exposure or resist reflow at PEB. Review exposure dose + PEB temperature. Check photomask integrity.',CRACK:'Mechanical stress — dicing, thermal shock, or film stress. Review ramp rates and wafer handling protocols.',VIA:'Etch undercut or mask misalignment. TEM cross-section recommended. Check etch endpoint detection.',OPEN:'Over-etch or resist adhesion failure. Review etch endpoint detection and resist strip process.',PARTICLE:'FMC — cleanroom HEPA breach, chamber wall flaking, or CMP slurry agglomeration. Run particle counter.',CMP:'Pad glazing, slurry flow variation, or carrier pressure imbalance. Recondition pad, recalibrate slurry.',LER:'Resist sensitivity or exposure dose variation. CD-SEM measurement advised. Review scanner focus/dose.',OTHERS:'Unknown ADC bin — route for DRA (Defect Review & Analysis). Human review required.',CLEAN:'No defect detected above threshold. Die passes inspection.'};
+const APPS={'A+':['HPC Data Centre CPUs','Aerospace Avionics','Medical Implantables','Automotive L4'],'A':['Consumer Premium SoCs','Gaming GPUs','Enterprise CPUs'],'B':['Mid-range Smartphones','Consumer Laptops','IoT Gateways'],'C':['Entry-level Phones','Chromebooks','IoT Sensors'],'D':['Basic IoT Beacons','LED Controllers'],'F':['Failure Analysis','Material Recycling']};
+
+let mode=null,wData=[],dDefects=[],dCls='PARTICLE',ovMode='bbox',scanList=[];
+
+function grade(cls,conf){
+  if(cls==='CLEAN')return{g:'A+',q:'Prime',p:'$800–$1,000',c:'gAP'};
+  if(['BRIDGE','OPEN','CRACK','VIA'].includes(cls)&&conf>0.85)return{g:'F',q:'Reject',p:'$0–$5',c:'gF'};
+  if(['BRIDGE','OPEN','CRACK','VIA'].includes(cls))return{g:'D',q:'Sub-standard',p:'$10–$30',c:'gD'};
+  if(cls==='PARTICLE'&&conf>0.8)return{g:'B',q:'Standard',p:'$150–$300',c:'gB'};
+  if(cls==='PARTICLE')return{g:'C',q:'Sub-standard',p:'$50–$100',c:'gC'};
+  if(['CMP','LER'].includes(cls)&&conf>0.8)return{g:'A',q:'Prime',p:'$400–$600',c:'gA'};
+  return{g:'B',q:'Standard',p:'$150–$300',c:'gB'};
+}
+
+// GATE
+function selMode(m){
+  mode=m;
+  document.getElementById('gc-wafer').classList.toggle('sel',m==='wafer');
+  document.getElementById('gc-die').classList.toggle('sel',m==='die');
+  document.getElementById('g-btn').classList.add('show');
+}
+
+function launch(){
+  if(!mode)return;
+  document.getElementById('gate').style.display='none';
+  document.getElementById('topbar').style.display='flex';
+  document.getElementById('layout').style.display='grid';
+  document.getElementById('tb-lbl').textContent=mode==='wafer'?'Wafer mode':'Single Die mode';
+  if(mode==='wafer'){
+    document.getElementById('center').style.display='flex';
+    document.getElementById('die-center').style.display='none';
+    document.getElementById('econ').style.display='block';
+    document.getElementById('die-grade').style.display='none';
+    document.getElementById('die-dtbl').style.display='none';
+    buildWafer();
+  } else {
+    document.getElementById('center').style.display='none';
+    document.getElementById('die-center').style.display='flex';
+    document.getElementById('econ').style.display='none';
+    document.getElementById('die-grade').style.display='block';
+    document.getElementById('die-dtbl').style.display='block';
+  }
+  setTimeout(addDemoScans,400);
+}
+
+function resetGate(){
+  document.getElementById('gate').style.display='flex';
+  document.getElementById('topbar').style.display='none';
+  document.getElementById('layout').style.display='none';
+  mode=null;
+  document.getElementById('gc-wafer').classList.remove('sel');
+  document.getElementById('gc-die').classList.remove('sel');
+  document.getElementById('g-btn').classList.remove('show');
+}
+
+// WAFER MAP
+function buildWafer(){
+  const wrap=document.getElementById('wafer-wrap');
+  const W=wrap.offsetWidth,H=wrap.offsetHeight;
+  const svg=d3.select('#wafer-svg');svg.selectAll('*').remove();svg.attr('width',W).attr('height',H);
+  const rad=Math.min(W,H)*0.44,cx=W/2,cy=H/2,COLS=17,ROWS=17;
+  const cs=Math.floor(rad*2/COLS)*0.85;
+  wData=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const nx=c-COLS/2+.5,ny=r-ROWS/2+.5;
+    if(Math.sqrt(nx*nx+ny*ny)>ROWS/2*.87)continue;
+    const edge=Math.sqrt(nx*nx+ny*ny)/(ROWS/2*.87);
+    let cls='CLEAN';const roll=Math.random();
+    if(edge>0.74&&roll<0.5){const ed=['PARTICLE','LER','CMP','CRACK'];cls=ed[Math.floor(Math.random()*ed.length)];}
+    else if(roll<0.12){const all=Object.keys(CL);cls=all[Math.floor(Math.random()*all.length)];}
+    wData.push({r,c,nx,ny,cls,conf:0.78+Math.random()*0.20});
+  }
+  svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',rad).attr('fill','#f9f9fb').attr('stroke','#c8c8cc').attr('stroke-width',2);
+  const pop=document.getElementById('cpop');
+  svg.selectAll('.wc').data(wData).enter().append('rect').attr('class','wc')
+    .attr('x',d=>cx+d.nx*cs-cs*.43).attr('y',d=>cy+d.ny*cs-cs*.43)
+    .attr('width',cs*.83).attr('height',cs*.83).attr('rx',2)
+    .attr('fill',d=>CL[d.cls]).attr('opacity',d=>d.cls==='CLEAN'?0.32:0.87).attr('cursor','pointer')
+    .on('click',(ev,d)=>{showResult(d.cls,d.conf);addScan(d.cls,d.conf);})
+    .on('mouseenter',function(ev,d){
+      d3.select(this).attr('opacity',1).attr('stroke','#0a0a0a').attr('stroke-width',1.5);
+      const g=grade(d.cls,d.conf),bx=genBBoxes(d.cls);
+      pop.style.opacity='1';
+      pop.innerHTML=`<div class="cp-cls" style="color:${CL[d.cls]}">${d.cls}</div><div class="cp-ind">${IND[d.cls]}</div><div>${ADC[d.cls]} · ${(d.conf*100).toFixed(0)}% conf</div><div>Grade <strong>${g.g}</strong> · ${g.q} · ${g.p}</div><div class="cp-box">${bx.length?bx.map(b=>`<span class="bp">[${b.x1},${b.y1}→${b.x2},${b.y2}] ${b.cf}%</span>`).join(''):'<span class="bp">NDD — Pass</span>'}</div>`;
+    })
+    .on('mousemove',ev=>{
+      const rc=wrap.getBoundingClientRect();
+      let lx=ev.clientX-rc.left+14,ly=ev.clientY-rc.top-10;
+      if(lx+270>W)lx=ev.clientX-rc.left-280;
+      pop.style.left=lx+'px';pop.style.top=ly+'px';
+    })
+    .on('mouseleave',function(ev,d){d3.select(this).attr('opacity',d.cls==='CLEAN'?0.32:0.87).attr('stroke','none');pop.style.opacity='0';});
+  svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',rad).attr('fill','none').attr('stroke','#888').attr('stroke-width',1.5);
+  const nw=rad*0.14;
+  svg.append('path').attr('d',`M ${cx-nw} ${cy+rad} A ${rad} ${rad} 0 0 0 ${cx+nw} ${cy+rad} Z`).attr('fill','#f9f9fb').attr('stroke','#888').attr('stroke-width',1.5);
+  updateStats();buildPattern();
+}
+
+function genBBoxes(cls){
+  if(cls==='CLEAN')return[];
+  return Array.from({length:cls==='PARTICLE'?Math.floor(Math.random()*3)+1:1},()=>{const x1=20+Math.floor(Math.random()*150),y1=20+Math.floor(Math.random()*150),w=15+Math.floor(Math.random()*30),h=15+Math.floor(Math.random()*30);return{x1,y1,x2:x1+w,y2:y1+h,cf:78+Math.floor(Math.random()*20)};});
+}
+
+function buildPattern(){
+  const badge=document.getElementById('pat-badge');
+  const edge=wData.filter(d=>Math.sqrt(d.nx*d.nx+d.ny*d.ny)>7);
+  const edr=edge.filter(d=>d.cls!=='CLEAN').length/Math.max(edge.length,1);
+  if(edr>0.34){badge.textContent='⚠ Edge Ring Pattern — check EBR recipe';badge.style.display='block';}
+  else badge.style.display='none';
+}
+
+function updateStats(){
+  const tot=wData.length,cl=wData.filter(d=>d.cls==='CLEAN').length,def=tot-cl;
+  const cnt={};wData.forEach(d=>{if(d.cls!=='CLEAN')cnt[d.cls]=(cnt[d.cls]||0)+1;});
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('st-yield').textContent=((cl/tot)*100).toFixed(1)+'%';
+  document.getElementById('st-total').textContent=tot;
+  document.getElementById('st-defects').textContent=def;
+  document.getElementById('st-dom').textContent=top?IND[top[0]].split('/')[0].trim():'—';
+  const GP={'A+':900,'A':500,'B':200,'C':75,'D':20,'F':0};
+  const GC={'A+':'#16a34a','A':'#22c55e','B':'#d97706','C':'#f07020','D':'#e03c2c','F':'#991b1b'};
+  const gc={};wData.forEach(d=>{const g=grade(d.cls,d.conf).g;gc[g]=(gc[g]||0)+1;});
+  let rev=0;Object.entries(gc).forEach(([g,n])=>{rev+=GP[g]*n;});
+  const html=['A+','A','B','C','D','F'].map(g=>{
+    const n=gc[g]||0;if(!n)return'';const pct=Math.round(n/tot*100);
+    return`<div class="ec-row"><span class="ec-g" style="color:${GC[g]}">${g}</span><div class="ec-bw"><div class="ec-b" style="width:${pct}%;background:${GC[g]}"></div></div><span class="ec-n">${n}</span><span class="ec-p" style="color:${GC[g]}">$${GP[g]}/chip</span></div>`;
+  }).join('');
+  document.getElementById('ec-rows').innerHTML=html+`<div class="ec-tot"><span class="ec-tot-l">Est. Wafer Value</span><span class="ec-tot-v">$${rev.toLocaleString()}</span></div>`;
+}
+
+// SHOW RESULT
+function showResult(cls,conf){
+  const g=grade(cls,conf);
+  document.getElementById('rc-ind').textContent=IND[cls];
+  document.getElementById('rc-cls').textContent=cls;
+  const gb=document.getElementById('rc-gbadge');gb.className='gr-b '+g.c;gb.textContent=g.g;
+  document.getElementById('rc-ql').textContent=g.q;
+  document.getElementById('rc-pr').textContent=g.p+'/chip';
+  const se=document.getElementById('rc-sev');se.className='rc-sev '+(SC[SEV[cls]]||'sr2');se.textContent=ADC[cls];
+  document.getElementById('rc-cf').textContent=(conf*100).toFixed(1)+'%';
+  document.getElementById('rc-cfill').style.width=(conf*100)+'%';
+  document.getElementById('rc-cause').textContent=CS[cls];
+  document.getElementById('sconf').textContent=cls+' '+(conf*100).toFixed(0)+'%';
+  const rb=document.getElementById('rpt-btn');rb.style.display='flex';rb.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg> Generate AI Report';rb.style.background='var(--b)';rb.disabled=false;
+}
+
+// DIE MODE
+function renderDie(cls,conf){
+  dCls=cls;dDefects=genBBoxes(cls);
+  const ph=document.getElementById('die-ph'),canvas=document.getElementById('die-canvas');
+  ph.style.display='none';canvas.style.display='block';
+  const wrap=canvas.parentElement;
+  const W=wrap.offsetWidth||600,H=wrap.offsetHeight||380;
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#0a0c14';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;
+  const gs=W/14;
+  for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  const m=36;ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=2;ctx.strokeRect(m,m,W-m*2,H-m*2);
+  drawBoxes(ctx,W,H,cls);
+  const g=grade(cls,conf);
+  const db=document.getElementById('dgc-b');db.className='dgc-big '+g.c;db.textContent=g.g;
+  document.getElementById('dgc-ql').textContent=g.q;
+  document.getElementById('dgc-pr').textContent=g.p+' per chip';
+  document.getElementById('dgc-apps').innerHTML=(APPS[g.g]||[]).map(a=>`<span class="dgc-tag">${a}</span>`).join('');
+  document.getElementById('ds-def').textContent=dDefects.length;
+  document.getElementById('ds-gr').textContent=g.g;
+  document.getElementById('ds-cf').textContent=(conf*100).toFixed(0)+'%';
+  buildDieTbl(cls);
+}
+
+function drawBoxes(ctx,W,H,cls){
+  const m=36,iw=W-m*2,ih=H-m*2;
+  if(ovMode==='heatmap'){
+    const hcx=m+iw*(.35+Math.random()*.3),hcy=m+ih*(.35+Math.random()*.3);
+    const gr=ctx.createRadialGradient(hcx,hcy,0,hcx,hcy,Math.min(iw,ih)*.28);
+    gr.addColorStop(0,'rgba(224,60,44,.55)');gr.addColorStop(0.4,'rgba(240,160,32,.28)');
+    gr.addColorStop(0.7,'rgba(34,197,94,.12)');gr.addColorStop(1,'rgba(34,197,94,0)');
+    ctx.fillStyle=gr;ctx.fillRect(m,m,iw,ih);
+    ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='11px monospace';ctx.fillText('Grad-CAM Activation',m+8,m+18);return;
+  }
+  const BC={CRITICAL:'#e03c2c',HIGH:'#f07020',MEDIUM:'#f0a020',PASS:'#22c55e',REVIEW:'#9090a0'};
+  const bc=BC[SEV[cls]]||'#e03c2c';
+  dDefects.forEach((b,i)=>{
+    const sx=iw/200,sy=ih/200;
+    const bx=m+b.x1*sx,by=m+b.y1*sy,bw=(b.x2-b.x1)*sx,bh=(b.y2-b.y1)*sy;
+    ctx.strokeStyle=bc;ctx.lineWidth=2;ctx.strokeRect(bx,by,bw,bh);
+    const lbl=`${cls} ${b.cf}%`;ctx.font='bold 11px monospace';
+    const lw=ctx.measureText(lbl).width+10;
+    ctx.fillStyle=bc;ctx.fillRect(bx,by-18,lw,18);
+    ctx.fillStyle='#fff';ctx.fillText(lbl,bx+5,by-5);
+    ctx.fillStyle='rgba(255,255,255,.65)';ctx.font='10px monospace';ctx.fillText('#'+(i+1),bx+4,by+14);
+  });
+  ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(m,H-m-26,220,20);
+  ctx.fillStyle=bc;ctx.font='bold 10px monospace';
+  ctx.fillText(`YOLOv8 · ${dDefects.length} detection${dDefects.length!==1?'s':''} · ${ADC[cls]}`,m+7,H-m-11);
+}
+
+function setOv(m){
+  ovMode=m;
+  document.getElementById('btn-bb').classList.toggle('act',m==='bbox');
+  document.getElementById('btn-hm').classList.toggle('act',m==='heatmap');
+  const canvas=document.getElementById('die-canvas');
+  if(canvas.style.display!=='none'){
+    const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+    ctx.fillStyle='#0a0c14';ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;
+    const gs=W/14;
+    for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    const m2=36;ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=2;ctx.strokeRect(m2,m2,W-m2*2,H-m2*2);
+    drawBoxes(ctx,W,H,dCls);
+  }
+}
+
+function buildDieTbl(cls){
+  if(!dDefects.length){document.getElementById('dt-rows').innerHTML=`<div style="font-size:11px;color:var(--g3)">No defects — Pass (NDD)</div>`;return;}
+  document.getElementById('dt-rows').innerHTML=dDefects.map((b,i)=>`<div class="dt-row"><div class="dt-top"><span class="dt-n">#${i+1}</span><span class="dt-c" style="color:${CL[cls]}">${cls}</span><span class="dt-cf">${b.cf}%</span></div><div class="dt-ind">${IND[cls]}</div><div class="dt-ind">[${b.x1},${b.y1}→${b.x2},${b.y2}]</div></div>`).join('');
+}
+
+// CAPTURE
+function capture(){
+  const btn=document.getElementById('cap-btn');
+  btn.textContent='Analysing…';btn.disabled=true;
+  setTimeout(()=>{
+    const opts=wData.filter(d=>d.cls!=='CLEAN').slice(0,8);
+    const pick=opts.length?opts[Math.floor(Math.random()*opts.length)]:{cls:'PARTICLE',conf:0.87};
+    showResult(pick.cls,pick.conf);addScan(pick.cls,pick.conf);
+    if(mode==='die')renderDie(pick.cls,pick.conf);
+    const g=grade(pick.cls,pick.conf);
+    addAI(`[REPORT]\n\nGrade: ${g.g} (${g.q}) · Est. value: ${g.p}/chip\n\n${IND[pick.cls]} detected at ${(pick.conf*100).toFixed(0)}% confidence.\n\n${CS[pick.cls]}\n\nTop application: ${(APPS[g.g]||['N/A'])[0]}.`);
+    btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg> Capture & Identify';
+    btn.disabled=false;
+  },1300);
+}
+
+// SCANS
+function addScan(cls,conf){
+  const g=grade(cls,conf);
+  scanList.unshift({cls,conf,grade:g.g});
+  if(scanList.length>10)scanList.pop();
+  document.getElementById('scans').innerHTML=scanList.map(s=>`<div class="sr-row" onclick="showResult('${s.cls}',${s.conf})"><div class="sr-sw" style="background:${CL[s.cls]}"></div><span class="sr-cls">${s.cls}</span><span class="sr-gr">${s.grade}</span><span class="sr-cf">${(s.conf*100).toFixed(0)}%</span></div>`).join('');
+}
+function addDemoScans(){wData.filter(d=>d.cls!=='CLEAN').slice(0,5).forEach((d,i)=>setTimeout(()=>addScan(d.cls,d.conf),i*80));}
+
+// CHAT
+function addAI(txt){
+  const body=document.getElementById('chat-body');
+  const d=document.createElement('div');
+  const isRpt=txt.startsWith('[REPORT]');
+  d.className=isRpt?'msg rpt':'msg ai';
+  if(isRpt)d.innerHTML='<div style="font-size:9px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-bottom:4px;">AI INSPECTION REPORT</div>'+txt.replace('[REPORT]','').trim().replace(/\n/g,'<br>');
+  else d.textContent=txt;
+  body.appendChild(d);body.scrollTop=body.scrollHeight;
+}
+function addUser(txt){const body=document.getElementById('chat-body');const d=document.createElement('div');d.className='msg usr';d.textContent=txt;body.appendChild(d);body.scrollTop=body.scrollHeight;}
+function addThink(){const body=document.getElementById('chat-body');const d=document.createElement('div');d.className='msg ai';d.id='think';d.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';body.appendChild(d);body.scrollTop=body.scrollHeight;}
+function rmThink(){const t=document.getElementById('think');if(t)t.remove();}
+
+async function sendChat(){
+  const inp=document.getElementById('chat-inp'),q=inp.value.trim();if(!q)return;
+  inp.value='';addUser(q);addThink();
+  await new Promise(r=>setTimeout(r,700+Math.random()*500));rmThink();
+  const u=q.toUpperCase();
+  let ans='Ask me about defect classes, yield analysis, grading, KLARF, or process root cause.';
+  if(u.includes('BRIDGE')||u.includes('CONDUCTIVE'))ans=CS.BRIDGE+' ADC: Killer. Grade D or F.';
+  else if(u.includes('CRACK')||u.includes('FRACTURE'))ans=CS.CRACK+' ADC: Potential Killer. Propagates under thermal cycling.';
+  else if(u.includes('PARTICLE')||u.includes('FMC'))ans=CS.PARTICLE+' Core FMC = Killer; edge particle may pass.';
+  else if(u.includes('CMP')||u.includes('PLANAR'))ans=CS.CMP+' Causes RC delay variation. Systematic across wafer = process drift.';
+  else if(u.includes('LER')||u.includes('ROUGHNESS'))ans=CS.LER+' At sub-28nm, LER is a primary yield limiter.';
+  else if(u.includes('YIELD')){const tot=wData.length,cl=wData.filter(d=>d.cls==='CLEAN').length;const y=(cl/Math.max(tot,1)*100).toFixed(1);ans=`Yield: ${y}% (${cl}/${tot} pass). ${parseFloat(y)<60?'CRITICAL — below threshold. Investigate dominant defect + systematic patterns.':parseFloat(y)<80?'Below target. Review edge ring + dominant defect RCA.':'Within acceptable range. Monitor for drift.'}`;}
+  else if(u.includes('GRADE')||u.includes('PRICE')||u.includes('VALUE'))ans='Grades: A+ Prime $800-1000 → A Prime $400-600 → B Standard $150-300 → C Sub-standard $50-100 → D $10-30 → F <$5. Multi-tier vs binary grading unlocks +11-81% revenue per wafer.';
+  else if(u.includes('KLARF'))ans='KLARF (KLA Results Format) — industry-standard wafer inspection format. Contains WaferID, LotID, DefectList with XREL/YREL coordinates, ClassNumber, and D0 (defects/cm²). Pro feature — upgrade to unlock export.';
+  else if(u.includes('HELLO')||u.includes('HI'))ans='Hello. SENTINEL AI — semiconductor ADC vocabulary. Ask about any defect class, yield, grading, or RCA.';
+  else if(u.includes('SEM')||u.includes('DATASET'))ans='50% of SENTINEL training data is real field-collected SEM images. Most public wafer datasets are synthetic or yield-map only — not actual microscope SEM output. Key differentiator.';
+  addAI(ans);
+}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
+
+// PRICING MODAL
+function openPM(){document.getElementById('pm').classList.add('open');}
+function closePM(){document.getElementById('pm').classList.remove('open');}
+document.getElementById('pm').addEventListener('click',e=>{if(e.target===document.getElementById('pm'))closePM();});
+
+// GENERATE REPORT
+function genReport(){
+  const btn=document.getElementById('rpt-btn');
+  const cls=document.getElementById('rc-cls').textContent;
+  const cf=document.getElementById('rc-cf').textContent;
+  const gr=document.getElementById('rc-gbadge').textContent;
+  const ql=document.getElementById('rc-ql').textContent;
+  const pr=document.getElementById('rc-pr').textContent;
+  const cause=document.getElementById('rc-cause').textContent;
+  if(cls==='—')return;
+  btn.textContent='Generating…';btn.disabled=true;
+  setTimeout(()=>{
+    addAI('[REPORT]\n\nGrade: '+gr+' ('+ql+') · '+pr+'\nClass: '+IND[cls]+' · '+cf+' confidence\nADC Type: '+ADC[cls]+'\n\nRoot Cause:\n'+cause+'\n\nRecommendation: '+(cls==='CLEAN'?'Die passes inspection. Route to packaging.':'Route for DRA. Do not proceed to packaging without re-inspection.'));
+    btn.innerHTML='✓ Report in Chat ↓';btn.style.background='#16a34a';btn.disabled=false;
+    setTimeout(()=>{btn.innerHTML='Generate AI Report';btn.style.background='var(--b)';},3000);
+  },1200);
+}
+
+// ── SSE LIVE STREAM — replaces setInterval (~50ms latency vs 3s) ──────────
+let _es = null;
+function connectSSE() {
+  _es = new EventSource(API + '/stream');
+  _es.onmessage = function(e) {
+    try {
+      const d = JSON.parse(e.data);
+      if (!d.predicted_class) return;
+      animateResultCard();
+      showResult(d.predicted_class, d.confidence);
+      addScan(d.predicted_class, d.confidence);
+      if (mode === 'die') renderDie(d.predicted_class, d.confidence);
+      updateSPCWidget(d);
+      const dot = document.querySelector('.dot-live');
+      if (dot) dot.style.background = 'var(--ok)';
+    } catch(err) {}
+  };
+  _es.onerror = function() {
+    const dot = document.querySelector('.dot-live');
+    if (dot) dot.style.background = '#888';
+    _es.close();
+    // Fallback: poll /latest every 3s while SSE reconnects
+    const fb = setInterval(async () => {
+      try {
+        const r = await fetch(API + '/latest', {signal: AbortSignal.timeout(2000)});
+        const d = await r.json();
+        if (d.predicted_class) { animateResultCard(); showResult(d.predicted_class, d.confidence); addScan(d.predicted_class, d.confidence); if (mode === 'die') renderDie(d.predicted_class, d.confidence); }
+      } catch(e) {}
+    }, 3000);
+    setTimeout(() => { clearInterval(fb); connectSSE(); }, 5000);
+  };
+  _es.onopen = function() { const dot = document.querySelector('.dot-live'); if (dot) dot.style.background = 'var(--ok)'; };
+}
+connectSSE();
+
+// ── RESULT CARD ANIMATION ────────────────────────────────────────────────
+function animateResultCard() {
+  const rc = document.getElementById('right');
+  if (!rc) return;
+  rc.style.transition = 'none'; rc.style.opacity = '0.4';
+  requestAnimationFrame(() => { rc.style.transition = 'opacity 0.28s ease'; rc.style.opacity = '1'; });
+}
+
+// ── SPC STATUS WIDGET UPDATE ─────────────────────────────────────────────
+function updateSPCWidget(result) {
+  const el = document.getElementById('spc-status-val'); if (!el) return;
+  const sev = result.severity || 'UNKNOWN';
+  const color = {CRITICAL:'#e03c2c',HIGH:'#f07020',MEDIUM:'#f0a020',PASS:'#22c55e',REVIEW:'#9090a0',UNKNOWN:'#9090a0'}[sev] || '#9090a0';
+  el.textContent = sev; el.style.color = color;
+  const cv = document.getElementById('spc-cls-val'); if (cv) cv.textContent = result.predicted_class || '—';
+  const cf = document.getElementById('spc-conf-val'); if (cf) cf.textContent = result.confidence ? (result.confidence * 100).toFixed(0) + '%' : '—';
+  const bar = document.getElementById('spc-conf-bar');
+  if (bar && result.confidence) { bar.style.transition = 'width 0.6s cubic-bezier(0.4,0,0.2,1)'; bar.style.width = (result.confidence * 100) + '%'; bar.style.background = color; }
+}
+
+window.addEventListener('resize',()=>{if(mode==='wafer')buildWafer();},{passive:true});
+</script>
+</body>
+</html>

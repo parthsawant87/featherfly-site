@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>EduScope — Biology Experiments</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--w:#ffffff;--b:#0a0a0a;--g:#f5f5f7;--g2:#e8e8ed;--g3:#6e6e73;--bd:#d2d2d7;--teal:#14b8a6;--teal2:#0d9488;--red:#e03c2c;--ff:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--mono:'SF Mono','Fira Code',monospace;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--b);color:var(--w);font-family:var(--ff);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;}
+
+/* TOPBAR */
+#topbar{height:50px;background:#0a0a0a;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;}
+.tb-logo{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.01em;}
+.tb-logo span{color:var(--teal);}
+.tb-badge{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--teal);color:#fff;padding:2px 8px;border-radius:8px;}
+.tb-sep{color:rgba(255,255,255,.15);font-size:16px;}
+.tb-title{font-size:13px;color:rgba(255,255,255,.55);font-weight:500;}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.tb-home{font-size:11px;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.12);padding:4px 12px;border-radius:10px;cursor:pointer;transition:all .2s;}
+.tb-home:hover{color:#fff;border-color:rgba(255,255,255,.3);}
+
+/* LAYOUT: filter | main | detail */
+#layout{flex:1;display:grid;grid-template-columns:200px 1fr 340px;overflow:hidden;}
+
+/* LEFT FILTER */
+#filter{background:#111114;border-right:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;overflow:hidden;}
+.f-head{padding:16px 16px 10px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.f-label{padding:6px 16px 4px;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.2);}
+.f-btn{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.45);transition:all .15s;border-left:2px solid transparent;}
+.f-btn:hover{color:#fff;background:rgba(255,255,255,.04);}
+.f-btn.act{color:var(--teal);border-left-color:var(--teal);background:rgba(20,184,166,.07);}
+.f-count{font-size:10px;background:rgba(255,255,255,.08);padding:1px 6px;border-radius:8px;color:rgba(255,255,255,.3);}
+.f-btn.act .f-count{background:rgba(20,184,166,.15);color:var(--teal);}
+.f-divider{height:1px;background:rgba(255,255,255,.06);margin:8px 0;}
+
+/* CENTER MAIN */
+#main{display:flex;flex-direction:column;overflow:hidden;background:#0d0f14;}
+
+/* SEARCH */
+#search-bar{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.search-wrap{position:relative;}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:rgba(255,255,255,.3);fill:none;stroke-width:2;}
+#search-inp{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 12px 9px 36px;font-size:13px;color:#fff;outline:none;font-family:var(--ff);transition:border-color .2s;}
+#search-inp::placeholder{color:rgba(255,255,255,.28);}
+#search-inp:focus{border-color:var(--teal);}
+
+/* EXPERIMENT GRID */
+#exp-grid{flex:1;overflow-y:auto;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;}
+#exp-grid::-webkit-scrollbar{width:3px;}
+#exp-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);}
+.exp-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;position:relative;}
+.exp-card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);transform:translateY(-1px);}
+.exp-card.sel{border-color:var(--teal);background:rgba(20,184,166,.07);}
+.exp-std{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px;}
+.exp-card.sel .exp-std{color:var(--teal);}
+.exp-icon{font-size:24px;margin-bottom:8px;}
+.exp-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;line-height:1.3;}
+.exp-latin{font-size:10px;color:rgba(255,255,255,.35);font-style:italic;margin-bottom:8px;}
+.exp-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.exp-tag{font-size:9px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.08);}
+.exp-card.sel .exp-tag{background:rgba(20,184,166,.1);color:rgba(20,184,166,.8);border-color:rgba(20,184,166,.2);}
+.exp-hidden{display:none;}
+
+/* EMPTY STATE */
+#empty{display:none;padding:48px;text-align:center;color:rgba(255,255,255,.2);font-size:13px;line-height:1.7;}
+#empty svg{width:40px;height:40px;stroke:rgba(255,255,255,.1);fill:none;stroke-width:1;margin:0 auto 12px;display:block;}
+
+/* RIGHT DETAIL PANEL */
+#detail{border-left:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;overflow:hidden;background:#0a0a0a;}
+#detail-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:rgba(255,255,255,.18);padding:32px;text-align:center;}
+#detail-empty svg{width:52px;height:52px;stroke:rgba(255,255,255,.1);fill:none;stroke-width:1;}
+#detail-empty p{font-size:12px;line-height:1.7;}
+#detail-content{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.det-head{padding:20px 20px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.det-icon{font-size:32px;margin-bottom:10px;}
+.det-std{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px;}
+.det-name{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:2px;}
+.det-latin{font-size:11px;color:rgba(255,255,255,.35);font-style:italic;margin-bottom:10px;}
+.det-chapter{display:inline-block;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.2);color:var(--teal);font-size:10px;font-weight:600;padding:3px 10px;border-radius:8px;}
+.det-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.det-body::-webkit-scrollbar{width:3px;}
+.det-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);}
+.det-sec{margin-bottom:18px;}
+.det-sec-title{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px;}
+.det-items{display:flex;flex-direction:column;gap:5px;}
+.det-item{font-size:12px;color:rgba(255,255,255,.65);display:flex;align-items:flex-start;gap:7px;line-height:1.5;}
+.det-item::before{content:'→';color:var(--teal);font-size:10px;margin-top:2px;flex-shrink:0;}
+.det-fact{background:rgba(20,184,166,.06);border:1px solid rgba(20,184,166,.15);border-radius:8px;padding:12px;font-size:11.5px;color:rgba(255,255,255,.6);line-height:1.6;}
+.det-fact strong{color:var(--teal);font-size:9px;display:block;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+.det-stain{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,.5);display:flex;justify-content:space-between;align-items:center;}
+.det-stain span:last-child{color:#fff;font-weight:600;}
+.det-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.scan-btn{width:100%;padding:13px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.scan-btn:hover{background:var(--teal2);transform:translateY(-1px);}
+.scan-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;}
+.no-sel-note{font-size:11px;color:rgba(255,255,255,.2);text-align:center;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="tb-logo">FEATHER<span>FLY</span></span>
+  <span class="tb-badge">EduScope</span>
+  <span class="tb-sep">·</span>
+  <span class="tb-title">Biology Experiments</span>
+  <div class="tb-right">
+    <div class="tb-home" onclick="location.href='04a_featherfly_in.html'">← Home</div>
+  </div>
+</div>
+
+<div id="layout">
+
+  <!-- FILTER -->
+  <div id="filter">
+    <div class="f-head">Filter by Standard</div>
+    <div class="f-btn act" data-std="all" onclick="setFilter('all',this)">All Standards <span class="f-count" id="fc-all">9</span></div>
+    <div class="f-divider"></div>
+    <div class="f-label">Middle School</div>
+    <div class="f-btn" data-std="6" onclick="setFilter('6',this)">Class 6 <span class="f-count" id="fc-6">0</span></div>
+    <div class="f-btn" data-std="7" onclick="setFilter('7',this)">Class 7 <span class="f-count" id="fc-7">0</span></div>
+    <div class="f-btn" data-std="8" onclick="setFilter('8',this)">Class 8 <span class="f-count" id="fc-8">2</span></div>
+    <div class="f-divider"></div>
+    <div class="f-label">Secondary</div>
+    <div class="f-btn" data-std="9" onclick="setFilter('9',this)">Class 9 <span class="f-count" id="fc-9">2</span></div>
+    <div class="f-btn" data-std="10" onclick="setFilter('10',this)">Class 10 <span class="f-count" id="fc-10">3</span></div>
+    <div class="f-divider"></div>
+    <div class="f-label">Senior Secondary</div>
+    <div class="f-btn" data-std="11" onclick="setFilter('11',this)">Class 11 <span class="f-count" id="fc-11">4</span></div>
+    <div class="f-btn" data-std="12" onclick="setFilter('12',this)">Class 12 <span class="f-count" id="fc-12">1</span></div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="search-bar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-inp" placeholder="Search experiments — onion, blood, stomata…" oninput="search(this.value)">
+      </div>
+    </div>
+    <div id="exp-grid"></div>
+    <div id="empty">
+      <svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="18"/><line x1="24" y1="16" x2="24" y2="24"/><line x1="24" y1="30" x2="24" y2="32"/></svg>
+      <p>No experiments found.<br>Try a different search term.</p>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div id="detail">
+    <div id="detail-empty">
+      <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="20"/><circle cx="26" cy="26" r="8"/><line x1="26" y1="6" x2="26" y2="14"/><line x1="26" y1="38" x2="26" y2="46"/><line x1="6" y1="26" x2="14" y2="26"/><line x1="38" y1="26" x2="46" y2="26"/></svg>
+      <p>Select an experiment<br>to see details and<br>start scanning</p>
+    </div>
+    <div id="detail-content">
+      <div class="det-head">
+        <div class="det-icon" id="det-icon">🔬</div>
+        <div class="det-std" id="det-std"></div>
+        <div class="det-name" id="det-name"></div>
+        <div class="det-latin" id="det-latin"></div>
+        <span class="det-chapter" id="det-chapter"></span>
+      </div>
+      <div class="det-body">
+        <div class="det-sec">
+          <div class="det-sec-title">What you need</div>
+          <div class="det-items" id="det-materials"></div>
+        </div>
+        <div class="det-sec">
+          <div class="det-sec-title">Key structures to find</div>
+          <div class="det-items" id="det-structs"></div>
+        </div>
+        <div class="det-sec">
+          <div class="det-stain">
+            <span>Stain / Preparation</span>
+            <span id="det-stain"></span>
+          </div>
+        </div>
+        <div class="det-sec">
+          <div class="det-fact"><strong>Did you know?</strong><span id="det-fact"></span></div>
+        </div>
+      </div>
+      <div class="det-footer">
+        <button class="scan-btn" id="scan-btn" onclick="startScan()">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
+          Start Scanning
+        </button>
+        <div class="no-sel-note">WhiteMouse Pod must be connected</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const EXPERIMENTS = [
+  {
+    key:'ONION_CELL', icon:'🧅',
+    name:'Onion Epidermal Cell', latin:'Allium cepa',
+    std:[9], stdLabel:'Class 9',
+    chapter:'Fundamental Unit of Life',
+    tags:['Plant Cell','Cell Wall','Vacuole'],
+    materials:['Onion bulb (1)','Glass slide + coverslip','Forceps','Iodine or Safranin solution','Dropper','Compound microscope'],
+    structs:['Cell wall — thick rigid outer boundary','Cell membrane — inside the wall','Large central vacuole — pushes nucleus to edge','Nucleus — dark staining oval','Cytoplasm — granular space between wall and vacuole'],
+    stain:'Iodine or Safranin',
+    fact:'The nucleus is pushed to the edge by the large central vacuole. No chloroplasts — onion scale leaves grow underground!'
+  },
+  {
+    key:'CHEEK_CELL', icon:'🫦',
+    name:'Human Cheek Cell', latin:'Buccal epithelial',
+    std:[9], stdLabel:'Class 9',
+    chapter:'Fundamental Unit of Life',
+    tags:['Animal Cell','No Cell Wall','Nucleus'],
+    materials:['Clean flat toothpick','Glass slide + coverslip','Methylene blue (0.1%)','Dropper'],
+    structs:['Cell membrane — no cell wall','Nucleus — centrally located, dark staining','Cytoplasm — granular, light blue','Nuclear membrane'],
+    stain:'Methylene blue',
+    fact:'You shed and replace cheek cells every 3–5 days! No cell wall — animal cells rely on the flexible plasma membrane alone.'
+  },
+  {
+    key:'AMOEBA', icon:'🦠',
+    name:'Amoeba (Pond Water)', latin:'Kingdom Protista',
+    std:[8,10], stdLabel:'Class 8 / 10',
+    chapter:'Microorganisms',
+    tags:['Unicellular','Pseudopodia','Live Observation'],
+    materials:['Pond water or hay infusion (24hr old)','Glass slide + coverslip','Dropper','No stain needed'],
+    structs:['Pseudopodia — temporary extensions for movement','Cell membrane — flexible boundary','Nucleus — central','Food vacuoles — digestion','Contractile vacuole — water regulation'],
+    stain:'Unstained (live) or Iodine',
+    fact:'Amoeba has no fixed shape! It changes shape every few seconds. Scan different parts of the slide — you may also find Bacteria or Algae!'
+  },
+  {
+    key:'BACTERIA', icon:'🦠',
+    name:'Bacteria Smear', latin:'Kingdom Monera',
+    std:[8,11], stdLabel:'Class 8 / 11',
+    chapter:'Microorganisms / Biological Classification',
+    tags:['Prokaryote','No Nucleus','Rod/Coccus'],
+    materials:['Curd or culture sample','Glass slide','Methylene blue or Gram stain','Bunsen burner for heat fixing'],
+    structs:['Cell wall — peptidoglycan','Nucleoid — no true nucleus','Flagella — may be visible','Pili — attachment structures'],
+    stain:'Methylene blue or Gram stain',
+    fact:'One bacterium can become 2 billion in just 8 hours! Bacteria were the first life on Earth — 3.5 billion years ago.'
+  },
+  {
+    key:'FUNGI_HYPHAE', icon:'🍄',
+    name:'Fungal Hyphae (Rhizopus)', latin:'Kingdom Fungi',
+    std:[10], stdLabel:'Class 10',
+    chapter:'How Do Organisms Reproduce',
+    tags:['Asexual Reproduction','Hyphae','Spores'],
+    materials:['Bread mold (leave bread in warm moist place 2-3 days)','Glass slide + coverslip','Forceps or needle','Cotton blue or unstained'],
+    structs:['Hyphae — thread-like filaments','Sporangium — spore case (black dot on top)','Sporangiophore — stalk holding sporangium','Rhizoids — root-like anchoring hyphae'],
+    stain:'Cotton blue or unstained',
+    fact:'The world\'s largest organism is a honey fungus in Oregon covering 8.9 km² and over 8,000 years old!'
+  },
+  {
+    key:'YEAST', icon:'🍺',
+    name:'Yeast Budding', latin:'Saccharomyces cerevisiae',
+    std:[10,11], stdLabel:'Class 10 / 11',
+    chapter:'How Do Organisms Reproduce / Biological Classification',
+    tags:['Budding','Asexual Reproduction','Fungus'],
+    materials:['Dry yeast (1/4 tsp)','Warm water + sugar','Glass slide + coverslip','Methylene blue (optional)','Wait 10 minutes before scanning'],
+    structs:['Mother cell — larger oval cell','Bud — smaller cell growing from mother','Bud scar — ring mark from previous budding','Vacuole — visible inside cell'],
+    stain:'Methylene blue (live/dead) or unstained',
+    fact:'Wait 10 minutes after mixing yeast in sugar water — buds need time to form! Each parent yeast cell can bud 20-30 times before dying.'
+  },
+  {
+    key:'STOMATA', icon:'🍃',
+    name:'Stomata + Guard Cells', latin:'Leaf epidermis',
+    std:[10,11], stdLabel:'Class 10 / 11',
+    chapter:'Transport in Plants',
+    tags:['Guard Cells','Gas Exchange','Transpiration'],
+    materials:['Fresh leaf (lower surface)','Clear nail varnish','Transparent tape','Glass slide','Safranin (optional)'],
+    structs:['Guard cells — paired kidney-shaped cells','Stoma — pore between guard cells','Chloroplasts in guard cells only','Subsidiary cells surrounding guard cells','Epidermal cells — no chloroplasts'],
+    stain:'Nail varnish peel — lower surface of leaf',
+    fact:'Guard cells are the ONLY epidermal cells with chloroplasts — they need ATP from photosynthesis to pump K+ ions and open the pore!'
+  },
+  {
+    key:'BLOOD_SMEAR', icon:'🩸',
+    name:'Human Blood Smear', latin:'Homo sapiens',
+    std:[11], stdLabel:'Class 11',
+    chapter:'Body Fluids and Circulation',
+    tags:['RBC','WBC','Platelets'],
+    materials:['Prepared Leishman-stained blood smear slide','Compound microscope','Immersion oil for 100× (optional)'],
+    structs:['RBC — biconcave disc, no nucleus, pink','WBC — has nucleus, larger, fewer','Platelets — tiny fragments, no nucleus','Plasma — fluid between cells'],
+    stain:'Leishman stain (prepared slide)',
+    fact:'Each RBC carries ~270 million haemoglobin molecules! Mature RBCs lose their nucleus to maximise oxygen-carrying space.'
+  },
+  {
+    key:'POLLEN', icon:'🌸',
+    name:'Pollen Grains', latin:'Male gametophyte',
+    std:[12], stdLabel:'Class 12',
+    chapter:'Sexual Reproduction in Flowering Plants',
+    tags:['Reproduction','Exine','Germination Pores'],
+    materials:['Fresh flower (any — hibiscus or lily works well)','Glass slide + coverslip','Acetocarmine or unstained','Forceps to collect anther'],
+    structs:['Exine — outer wall (sporopollenin)','Intine — inner wall (cellulose)','Vegetative cell — larger cell','Generative cell — smaller cell','Germination pores — openings in exine'],
+    stain:'Acetocarmine or unstained',
+    fact:'Sporopollenin in the exine is the most resistant biological substance known — pollen survives 10,000 years in fossils!'
+  },
+];
+
+let activeFilter='all', selectedKey=null;
+
+// BUILD GRID
+function buildGrid(){
+  const grid=document.getElementById('exp-grid');
+  grid.innerHTML='';
+  EXPERIMENTS.forEach(exp=>{
+    const card=document.createElement('div');
+    card.className='exp-card';
+    card.id='card-'+exp.key;
+    card.onclick=()=>selectExp(exp.key);
+    card.innerHTML=`
+      <div class="exp-std">${exp.stdLabel}</div>
+      <div class="exp-icon">${exp.icon}</div>
+      <div class="exp-name">${exp.name}</div>
+      <div class="exp-latin">${exp.latin}</div>
+      <div class="exp-tags">${exp.tags.map(t=>`<span class="exp-tag">${t}</span>`).join('')}</div>`;
+    grid.appendChild(card);
+  });
+  applyFilter();
+}
+
+// FILTER
+function setFilter(std, el){
+  activeFilter=std;
+  document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+  applyFilter();
+}
+
+function applyFilter(){
+  const q=document.getElementById('search-inp').value.toLowerCase();
+  let visible=0;
+  EXPERIMENTS.forEach(exp=>{
+    const card=document.getElementById('card-'+exp.key);
+    const matchStd=activeFilter==='all'||exp.std.includes(parseInt(activeFilter));
+    const matchQ=!q||(exp.name.toLowerCase().includes(q)||exp.key.toLowerCase().includes(q)||exp.tags.some(t=>t.toLowerCase().includes(q))||exp.chapter.toLowerCase().includes(q));
+    if(matchStd&&matchQ){card.classList.remove('exp-hidden');visible++;}
+    else card.classList.add('exp-hidden');
+  });
+  document.getElementById('empty').style.display=visible===0?'block':'none';
+  document.getElementById('exp-grid').style.display=visible===0?'none':'grid';
+}
+
+// SEARCH
+function search(v){applyFilter();}
+
+// SELECT EXPERIMENT
+function selectExp(key){
+  selectedKey=key;
+  document.querySelectorAll('.exp-card').forEach(c=>c.classList.remove('sel'));
+  const card=document.getElementById('card-'+key);
+  if(card)card.classList.add('sel');
+  const exp=EXPERIMENTS.find(e=>e.key===key);
+  if(!exp)return;
+  document.getElementById('detail-empty').style.display='none';
+  document.getElementById('detail-content').style.display='flex';
+  document.getElementById('det-icon').textContent=exp.icon;
+  document.getElementById('det-std').textContent=exp.stdLabel;
+  document.getElementById('det-name').textContent=exp.name;
+  document.getElementById('det-latin').textContent=exp.latin;
+  document.getElementById('det-chapter').textContent='NCERT: '+exp.chapter;
+  document.getElementById('det-stain').textContent=exp.stain;
+  document.getElementById('det-fact').textContent=exp.fact;
+  document.getElementById('det-materials').innerHTML=exp.materials.map(m=>`<div class="det-item">${m}</div>`).join('');
+  document.getElementById('det-structs').innerHTML=exp.structs.map(s=>`<div class="det-item">${s}</div>`).join('');
+}
+
+// START SCAN — passes selected experiment to dashboard
+function startScan(){
+  if(!selectedKey)return;
+  location.href='04c_eduscope_dashboard.html?exp='+selectedKey;
+}
+
+// INIT
+buildGrid();
+</script>
+</body>
+</html>

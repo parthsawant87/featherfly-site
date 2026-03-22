@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Featherfly — See What Others Miss</title>
+<meta name="description" content="AI-powered microscopy for semiconductor inspection and school biology. WhiteMouse Pod — ₹6,000 device, from ₹499/month software.">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--white:#ffffff;--black:#0a0a0a;--gray:#f5f5f7;--gray2:#e8e8ed;--gray3:#6e6e73;--gray4:#1d1d1f;--red:#e03c2c;--red2:#b02010;--border:#d2d2d7;--ff:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;--mono:'SF Mono','Fira Code','Cascadia Code',monospace;--ease:cubic-bezier(.25,.46,.45,.94);}
+html{scroll-behavior:smooth;font-size:16px;}
+body{background:var(--white);color:var(--black);font-family:var(--ff);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+a{color:inherit;text-decoration:none;}
+img{display:block;max-width:100%;}
+#nav{position:fixed;top:0;left:0;right:0;z-index:999;height:52px;display:flex;align-items:center;padding:0 48px;background:rgba(255,255,255,0.72);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid transparent;transition:border-color .3s,background .3s;}
+#nav.scrolled{border-bottom-color:var(--border);background:rgba(255,255,255,0.92);}
+.nav-logo{font-size:17px;font-weight:700;letter-spacing:-.02em;flex:0 0 auto;}
+.nav-logo span{color:var(--red);}
+.nav-links{display:flex;gap:32px;margin:0 auto;list-style:none;}
+.nav-links a{font-size:13px;color:var(--gray3);transition:color .2s;}
+.nav-links a:hover{color:var(--black);}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.lang-btn{font-size:12px;color:var(--gray3);cursor:pointer;border:1px solid var(--border);padding:3px 10px;border-radius:20px;background:none;transition:all .2s;}
+.lang-btn:hover{color:var(--black);border-color:var(--black);}
+.nav-cta{background:var(--black);color:var(--white);font-size:13px;font-weight:500;padding:7px 18px;border-radius:20px;transition:background .2s;}
+.nav-cta:hover{background:var(--red);}
+#hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;background:var(--white);position:relative;overflow:hidden;}
+.hero-eyebrow{font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';width:24px;height:1px;background:var(--red);}
+.hero-h1{font-size:clamp(48px,8vw,96px);font-weight:700;letter-spacing:-.04em;line-height:1.01;color:var(--black);margin-bottom:16px;max-width:900px;}
+.hero-h1 em{color:var(--red);font-style:normal;}
+.hero-sub{font-size:clamp(17px,2.5vw,22px);color:var(--gray3);max-width:560px;line-height:1.5;margin:0 auto 40px;}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:64px;}
+.btn-primary{background:var(--black);color:var(--white);font-size:16px;font-weight:500;padding:14px 32px;border-radius:30px;transition:background .2s,transform .15s;}
+.btn-primary:hover{background:var(--red);transform:translateY(-1px);}
+.btn-secondary{background:transparent;color:var(--black);font-size:16px;font-weight:500;padding:14px 32px;border-radius:30px;border:1.5px solid var(--black);transition:all .2s;}
+.btn-secondary:hover{background:var(--black);color:var(--white);}
+#pod-wrap{width:340px;height:340px;position:relative;margin:0 auto;}
+#pod-svg{width:100%;height:100%;filter:drop-shadow(0 32px 64px rgba(0,0,0,.12));}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+#pod-group{animation:float 3.5s var(--ease) infinite;}
+.scan-line{animation:scan 2.5s linear infinite;}
+@keyframes scan{0%{transform:translateY(-60px);opacity:0;}20%{opacity:1;}80%{opacity:1;}100%{transform:translateY(60px);opacity:0;}}
+#marquee{background:var(--black);color:var(--white);padding:14px 0;overflow:hidden;}
+.marquee-inner{display:flex;gap:0;white-space:nowrap;animation:marquee 18s linear infinite;}
+.marquee-inner span{font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:0 48px;color:rgba(255,255,255,.6);}
+.marquee-inner span em{color:var(--red);font-style:normal;}
+@keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.section{padding:100px 48px;max-width:1200px;margin:0 auto;}
+.section-inner{max-width:1200px;margin:0 auto;padding:0 48px;}
+.sec-eyebrow{font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:16px;}
+.sec-title{font-size:clamp(32px,4.5vw,52px);font-weight:700;letter-spacing:-.03em;line-height:1.08;color:var(--black);margin-bottom:16px;max-width:700px;}
+.sec-desc{font-size:17px;color:var(--gray3);line-height:1.6;max-width:580px;margin-bottom:48px;}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:56px;}
+.step-card{background:var(--white);padding:48px 40px;position:relative;border:1px solid var(--border);}
+.step-card:first-child{border-radius:16px 0 0 16px;}
+.step-card:last-child{border-radius:0 16px 16px 0;}
+.step-num{font-size:72px;font-weight:800;letter-spacing:-.04em;color:var(--gray2);line-height:1;margin-bottom:20px;}
+.step-icon{width:52px;height:52px;background:var(--black);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
+.step-icon svg{width:26px;height:26px;stroke:var(--white);fill:none;stroke-width:1.8;}
+.step-card h3{font-size:20px;font-weight:600;letter-spacing:-.02em;margin-bottom:10px;}
+.step-card p{font-size:14px;color:var(--gray3);line-height:1.6;}
+.step-arrow{position:absolute;right:-20px;top:50%;transform:translateY(-50%);width:40px;height:40px;background:var(--white);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;}
+.step-arrow svg{width:14px;height:14px;stroke:var(--black);fill:none;stroke-width:2;}
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px;}
+.demo-card{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--white);}
+.demo-card-head{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.demo-card-head .dot{width:8px;height:8px;border-radius:50%;}
+.demo-card-head .label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gray3);}
+.demo-card-body{padding:24px;}
+#wafer-container{width:100%;aspect-ratio:1;max-width:280px;margin:0 auto;}
+.specimen-card{background:var(--gray);border-radius:12px;padding:20px;text-align:center;}
+.specimen-name{font-size:18px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
+.specimen-sub{font-size:12px;color:var(--gray3);margin-bottom:14px;}
+.conf-bar{height:4px;background:var(--gray2);border-radius:2px;overflow:hidden;margin-bottom:6px;}
+.conf-fill{height:100%;background:var(--black);border-radius:2px;}
+.conf-label{font-size:11px;color:var(--gray3);display:flex;justify-content:space-between;}
+.ncert-tag{display:inline-block;background:var(--black);color:var(--white);font-size:10px;font-weight:600;letter-spacing:.08em;padding:3px 10px;border-radius:20px;margin-top:10px;}
+.products-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:56px;}
+.product-card{border-radius:20px;overflow:hidden;border:1px solid var(--border);background:var(--white);transition:transform .3s var(--ease),box-shadow .3s;}
+.product-card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.08);}
+.product-card-top{padding:40px 40px 32px;border-bottom:1px solid var(--border);}
+.product-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:20px;}
+.tag-sentinel{background:rgba(224,60,44,.08);color:var(--red);}
+.tag-eduscope{background:var(--black);color:var(--white);}
+.product-card h3{font-size:30px;font-weight:700;letter-spacing:-.03em;margin-bottom:8px;}
+.product-card .tagline{font-size:15px;color:var(--gray3);line-height:1.5;margin-bottom:24px;}
+.product-feats{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.product-feats li{font-size:13.5px;color:var(--gray3);display:flex;align-items:center;gap:10px;}
+.feat-check{width:18px;height:18px;border-radius:50%;background:var(--black);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.feat-check svg{width:9px;height:9px;stroke:var(--white);fill:none;stroke-width:2.5;}
+.product-card-bottom{padding:28px 40px;display:flex;align-items:center;justify-content:space-between;}
+.price-block .price{font-size:32px;font-weight:700;letter-spacing:-.03em;}
+.price-block .per{font-size:13px;color:var(--gray3);margin-top:2px;}
+.price-block .trial{font-size:11px;color:var(--red);font-weight:600;margin-top:4px;}
+.product-cta{background:var(--black);color:var(--white);font-size:14px;font-weight:500;padding:12px 24px;border-radius:24px;transition:background .2s;}
+.product-cta:hover{background:var(--red);}
+.numbers-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:56px;}
+.num-cell{background:var(--white);padding:48px 32px;text-align:center;}
+.num-cell .big{font-size:54px;font-weight:800;letter-spacing:-.04em;color:var(--black);line-height:1;}
+.num-cell .big em{color:var(--red);font-style:normal;}
+.num-cell p{font-size:13px;color:var(--gray3);margin-top:8px;line-height:1.4;}
+
+/* ── PRICING — explicit colors, no var(--gray3) on text ── */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px;}
+.pricing-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+.plan-card{border:1.5px solid var(--border);border-radius:20px;overflow:hidden;background:var(--white);}
+.plan-card.featured{border-color:#0a0a0a;border-width:2px;}
+.plan-card.institutional{border-color:#2471a3;background:#f0f8ff;}
+.plan-head{padding:24px 24px 18px;border-bottom:1px solid var(--border);}
+.plan-card.featured .plan-head{background:#0a0a0a;border-bottom-color:rgba(255,255,255,.1);}
+.plan-card.institutional .plan-head{background:#e8f4fd;border-bottom-color:#bae0f7;}
+.plan-name{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555555;margin-bottom:10px;}
+.plan-card.featured .plan-name{color:rgba(255,255,255,.55);}
+.plan-card.institutional .plan-name{color:#185fa5;}
+.plan-price{font-size:36px;font-weight:800;letter-spacing:-.04em;line-height:1;color:#0a0a0a;}
+.plan-card.featured .plan-price{color:#ffffff;}
+.plan-card.institutional .plan-price{color:#185fa5;font-size:28px;}
+.plan-price span{font-size:14px;font-weight:400;color:#666666;}
+.plan-card.featured .plan-price span{color:rgba(255,255,255,.45);}
+.plan-card.institutional .plan-price span{color:#5a9fd4;font-size:12px;}
+.plan-desc{font-size:12.5px;color:#555555;margin-top:6px;line-height:1.5;}
+.plan-card.featured .plan-desc{color:rgba(255,255,255,.65);}
+.plan-card.institutional .plan-desc{color:#2a6496;}
+.plan-body{padding:20px 24px;}
+.plan-card.featured .plan-body{background:#0a0a0a;}
+.plan-feats{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:20px;}
+.plan-feats li{font-size:12.5px;color:#333333;display:flex;align-items:flex-start;gap:9px;line-height:1.5;}
+.plan-feats li::before{content:'✓';color:#0a0a0a;font-weight:700;font-size:10px;width:17px;height:17px;min-width:17px;background:#e8e8ed;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px;flex-shrink:0;}
+.plan-card.featured .plan-feats li{color:rgba(255,255,255,.88);}
+.plan-card.featured .plan-feats li::before{color:#ffffff;background:rgba(255,255,255,.18);}
+.plan-feats li.locked{color:#aaaaaa;}
+.plan-feats li.locked::before{content:'↑';color:#bbbbbb;background:#f0f0f0;font-size:9px;}
+.plan-card.featured .plan-feats li.locked{color:rgba(255,255,255,.28);}
+.plan-card.featured .plan-feats li.locked::before{color:rgba(255,255,255,.3);background:rgba(255,255,255,.06);}
+.plan-card.institutional .plan-feats li{color:#1a4a6b;}
+.plan-card.institutional .plan-feats li::before{color:#185fa5;background:#cce0f5;}
+.plan-btn{display:block;text-align:center;padding:11px;border-radius:24px;font-size:13px;font-weight:600;transition:all .2s;cursor:pointer;}
+.plan-btn-outline{border:1.5px solid #0a0a0a;color:#0a0a0a;background:transparent;}
+.plan-btn-outline:hover{background:#0a0a0a;color:#ffffff;}
+.plan-btn-solid{background:var(--red);color:#ffffff;border:1.5px solid var(--red);}
+.plan-btn-solid:hover{background:var(--red2);}
+.plan-btn-blue{border:1.5px solid #185fa5;color:#185fa5;background:transparent;}
+.plan-btn-blue:hover{background:#185fa5;color:#ffffff;}
+.pricing-note{text-align:center;font-size:13px;color:#444444;margin-top:24px;line-height:1.7;}
+.pricing-note strong{color:#111111;}
+
+.faq-list{margin-top:48px;max-width:720px;}
+.faq-item{border-bottom:1px solid var(--border);}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:22px 0;cursor:pointer;gap:24px;}
+.faq-q span{font-size:16px;font-weight:500;letter-spacing:-.01em;}
+.faq-icon{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .25s,border-color .2s;}
+.faq-item.open .faq-icon{transform:rotate(45deg);border-color:var(--black);}
+.faq-icon svg{width:10px;height:10px;stroke:var(--black);fill:none;stroke-width:2.5;}
+.faq-a{font-size:14px;color:var(--gray3);line-height:1.7;max-height:0;overflow:hidden;transition:max-height .35s var(--ease),padding .3s;}
+.faq-item.open .faq-a{max-height:200px;padding-bottom:20px;}
+#contact{padding:100px 48px;text-align:center;background:var(--black);color:var(--white);}
+#contact .big-line{font-size:clamp(36px,6vw,72px);font-weight:700;letter-spacing:-.04em;line-height:1.06;margin-bottom:24px;}
+#contact .big-line em{color:var(--red);font-style:normal;}
+#contact p{font-size:17px;color:rgba(255,255,255,.5);max-width:480px;margin:0 auto 40px;line-height:1.6;}
+.contact-btn{display:inline-block;background:var(--white);color:var(--black);font-size:16px;font-weight:600;padding:16px 40px;border-radius:30px;transition:background .2s;}
+.contact-btn:hover{background:var(--red);color:var(--white);}
+footer{background:var(--black);border-top:1px solid rgba(255,255,255,.08);padding:40px 48px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;}
+.footer-logo{font-size:16px;font-weight:700;color:var(--white);letter-spacing:-.02em;}
+.footer-logo span{color:var(--red);}
+.footer-links{display:flex;gap:24px;}
+.footer-links a{font-size:12px;color:rgba(255,255,255,.4);transition:color .2s;}
+.footer-links a:hover{color:var(--white);}
+.footer-copy{font-size:12px;color:rgba(255,255,255,.3);}
+.fade-up{opacity:0;transform:translateY(28px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+.fade-up.vis{opacity:1;transform:translateY(0);}
+.fade-up.d1{transition-delay:.1s;}.fade-up.d2{transition-delay:.2s;}.fade-up.d3{transition-delay:.3s;}
+@media(max-width:768px){
+  #nav{padding:0 20px;}.nav-links{display:none;}
+  .section{padding:64px 20px;}.section-inner{padding:0 20px;}
+  .steps,.demo-grid,.products-grid,.numbers-grid{grid-template-columns:1fr;}
+  .pricing-grid,.pricing-grid-2{grid-template-columns:1fr;}
+  .numbers-grid{grid-template-columns:1fr 1fr;}
+  .step-card{border-radius:0!important;}
+  .step-card:first-child{border-radius:16px 16px 0 0!important;}
+  .step-card:last-child{border-radius:0 0 16px 16px!important;}
+  .step-arrow{display:none;}
+  footer{flex-direction:column;text-align:center;}
+}
+[lang-hi]{display:none;}
+body.hindi [lang-en]{display:none;}
+body.hindi [lang-hi]{display:block;}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-logo">FEATHER<span>FLY</span></div>
+  <ul class="nav-links">
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#products">Products</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="lang-btn" id="langBtn" onclick="toggleLang()">हिंदी</button>
+    <a href="04b_sentinel_dashboard.html" class="nav-cta" lang-en>Get Started →</a>
+    <a href="04b_sentinel_dashboard.html" class="nav-cta" lang-hi style="display:none;">शुरू करें →</a>
+  </div>
+</nav>
+
+<section id="hero">
+  <div class="hero-eyebrow" lang-en>AI-Powered Microscopy · Made in India · ₹6,000</div>
+  <div class="hero-eyebrow" lang-hi>AI माइक्रोस्कोपी · भारत में निर्मित · ₹6,000</div>
+  <h1 class="hero-h1" lang-en>See what<br>others <em>miss.</em></h1>
+  <h1 class="hero-h1" lang-hi style="display:none;">वो देखें जो<br>दूसरे <em>चूक जाते हैं।</em></h1>
+  <p class="hero-sub" lang-en>The WhiteMouse Pod puts AI-powered defect detection and biology education into a ₹6,000 device. Plug in. Point at slide. Know in seconds.</p>
+  <p class="hero-sub" lang-hi style="display:none;">WhiteMouse Pod ₹6,000 डिवाइस में AI-powered defect detection और biology education लाता है।</p>
+  <div class="hero-actions">
+    <a href="04b_sentinel_dashboard.html" class="btn-primary" lang-en>Try SENTINEL →</a>
+    <a href="04b_sentinel_dashboard.html" class="btn-primary" lang-hi style="display:none;">SENTINEL आज़माएं →</a>
+    <a href="04c_eduscope_experiments.html" class="btn-secondary">EduScope →</a>
+  </div>
+  <div id="pod-wrap">
+    <svg id="pod-svg" viewBox="0 0 340 340" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#e03c2c" stop-opacity="0.12"/><stop offset="100%" stop-color="#e03c2c" stop-opacity="0"/></radialGradient>
+        <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5f5f7"/><stop offset="100%" stop-color="#e0e0e5"/></linearGradient>
+        <linearGradient id="screenGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a1a2e"/><stop offset="100%" stop-color="#0a0a14"/></linearGradient>
+        <clipPath id="screenClip"><rect x="118" y="130" width="104" height="72" rx="4"/></clipPath>
+      </defs>
+      <circle cx="170" cy="170" r="130" fill="url(#glow)"/>
+      <circle cx="170" cy="230" r="60" fill="none" stroke="#e03c2c" stroke-width="1" opacity="0">
+        <animate attributeName="r" from="60" to="120" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <g id="pod-group">
+        <ellipse cx="170" cy="285" rx="80" ry="12" fill="#d0d0d5" opacity="0.5"/>
+        <rect x="142" y="265" width="56" height="22" rx="6" fill="#c8c8cd"/>
+        <rect x="156" y="260" width="28" height="8" rx="4" fill="#b8b8bd"/>
+        <rect x="100" y="105" width="140" height="160" rx="14" fill="url(#bodyGrad)" stroke="#d2d2d7" stroke-width="1"/>
+        <rect x="110" y="105" width="120" height="8" rx="4" fill="#c8c8cd"/>
+        <rect x="88" y="118" width="16" height="100" rx="8" fill="#c0c0c5" stroke="#b0b0b5" stroke-width="1"/>
+        <rect x="84" y="108" width="24" height="18" rx="5" fill="#b8b8bd"/>
+        <rect x="88" y="218" width="16" height="32" rx="6" fill="#888890" stroke="#78787e" stroke-width="1"/>
+        <ellipse cx="96" cy="252" rx="8" ry="4" fill="#2a2a3a"/>
+        <ellipse cx="94" cy="251" rx="3" ry="2" fill="#4a6080" opacity="0.6"/>
+        <rect x="118" y="130" width="104" height="72" rx="6" fill="url(#screenGrad)" stroke="#333340" stroke-width="1"/>
+        <g clip-path="url(#screenClip)">
+          <line x1="118" y1="152" x2="222" y2="152" stroke="#1e3050" stroke-width="0.5"/>
+          <line x1="118" y1="168" x2="222" y2="168" stroke="#1e3050" stroke-width="0.5"/>
+          <line x1="118" y1="184" x2="222" y2="184" stroke="#1e3050" stroke-width="0.5"/>
+          <line x1="144" y1="130" x2="144" y2="202" stroke="#1e3050" stroke-width="0.5"/>
+          <line x1="170" y1="130" x2="170" y2="202" stroke="#1e3050" stroke-width="0.5"/>
+          <line x1="196" y1="130" x2="196" y2="202" stroke="#1e3050" stroke-width="0.5"/>
+          <rect x="144" y="130" width="26" height="22" fill="#e03c2c" opacity="0.7"/>
+          <rect x="144" y="168" width="26" height="16" fill="#f07020" opacity="0.5"/>
+          <rect x="196" y="152" width="26" height="16" fill="#22c55e" opacity="0.4"/>
+          <line x1="118" y1="165" x2="222" y2="165" stroke="#e03c2c" stroke-width="1.5" opacity="0.9" class="scan-line"/>
+        </g>
+        <text x="170" y="213" text-anchor="middle" font-size="7" fill="#888890" font-family="-apple-system,sans-serif" font-weight="600" letter-spacing="1">SENTINEL ACTIVE</text>
+        <circle cx="126" cy="222" r="3" fill="#22c55e"><animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite"/></circle>
+        <circle cx="138" cy="222" r="3" fill="#f0a020"/>
+        <rect x="237" y="150" width="3" height="40" rx="1.5" fill="#b0b0b5"/>
+        <rect x="237" y="200" width="3" height="16" rx="1.5" fill="#b0b0b5"/>
+        <path d="M 240 225 Q 265 225 270 240 Q 275 255 260 258" stroke="#888890" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <circle cx="260" cy="258" r="3" fill="#606065"/>
+        <text x="170" y="248" text-anchor="middle" font-size="8" fill="#b0b0b5" font-family="-apple-system,sans-serif" font-weight="700" letter-spacing="2">FEATHERFLY</text>
+      </g>
+    </svg>
+  </div>
+  <div style="position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:var(--gray3);letter-spacing:.1em;text-transform:uppercase;">Scroll</span>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M4 9l4 4 4-4" stroke="var(--gray3)" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </div>
+</section>
+
+<div id="marquee">
+  <div class="marquee-inner">
+    <span>90%+ <em>Accuracy</em></span><span>₹6,000 <em>Hardware</em></span><span>9 <em>Defect Classes</em></span><span>NCERT <em>Aligned</em></span><span>1–3s <em>Inference</em></span><span>RPi Zero 2W <em>Powered</em></span><span>TFLite <em>INT8</em></span><span>Claude AI <em>Reports</em></span><span>50% Real <em>SEM Data</em></span><span>featherfly<em>.in</em></span>
+    <span>90%+ <em>Accuracy</em></span><span>₹6,000 <em>Hardware</em></span><span>9 <em>Defect Classes</em></span><span>NCERT <em>Aligned</em></span><span>1–3s <em>Inference</em></span><span>RPi Zero 2W <em>Powered</em></span><span>TFLite <em>INT8</em></span><span>Claude AI <em>Reports</em></span><span>50% Real <em>SEM Data</em></span><span>featherfly<em>.in</em></span>
+  </div>
+</div>
+
+<section id="how" style="background:var(--gray);padding:100px 0;">
+  <div class="section-inner">
+    <div class="fade-up">
+      <div class="sec-eyebrow" lang-en>How It Works</div>
+      <div class="sec-eyebrow" lang-hi style="display:none;">यह कैसे काम करता है</div>
+      <h2 class="sec-title" lang-en>Three steps.<br>Zero guesswork.</h2>
+      <h2 class="sec-title" lang-hi style="display:none;">तीन कदम।<br>कोई अनुमान नहीं।</h2>
+    </div>
+    <div class="steps fade-up d1">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="7"/></svg></div>
+        <h3 lang-en>Place your slide</h3><h3 lang-hi style="display:none;">स्लाइड रखें</h3>
+        <p lang-en>Put a wafer, PCB section, or biology slide under the WhiteMouse Pod's USB microscope. No sample preparation required for SENTINEL.</p>
+        <p lang-hi style="display:none;">WhiteMouse Pod के USB microscope के नीचे wafer, PCB, या biology slide रखें।</p>
+        <div class="step-arrow"><svg viewBox="0 0 14 14"><path d="M2 7h10M8 3l4 4-4 4"/></svg></div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+        <h3 lang-en>AI identifies instantly</h3><h3 lang-hi style="display:none;">AI तुरंत पहचानता है</h3>
+        <p lang-en>MobileNetV3 INT8 model classifies the image in 1–3 seconds directly on the Raspberry Pi. No cloud upload needed for inference.</p>
+        <p lang-hi style="display:none;">MobileNetV3 INT8 model 1–3 सेकंड में image classify करता है।</p>
+        <div class="step-arrow"><svg viewBox="0 0 14 14"><path d="M2 7h10M8 3l4 4-4 4"/></svg></div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+        <h3 lang-en>Get your report</h3><h3 lang-hi style="display:none;">रिपोर्ट पाएं</h3>
+        <p lang-en>Claude AI generates an inspection report with grade, market value, root cause analysis, and process recommendations.</p>
+        <p lang-hi style="display:none;">Claude AI grade, market value और root cause analysis के साथ report generate करता है।</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="demo" class="section fade-up">
+  <div class="sec-eyebrow" lang-en>See It Working</div>
+  <div class="sec-eyebrow" lang-hi style="display:none;">इसे काम करते देखें</div>
+  <h2 class="sec-title" lang-en>Real output.<br>Real intelligence.</h2>
+  <h2 class="sec-title" lang-hi style="display:none;">असली आउटपुट।<br>असली बुद्धिमत्ता।</h2>
+  <p class="sec-desc" lang-en>Live preview of SENTINEL wafer map and EduScope specimen identification — what your team sees in the dashboard.</p>
+  <div class="demo-grid">
+    <div class="demo-card">
+      <div class="demo-card-head">
+        <div class="dot" style="background:#e03c2c;"></div><div class="dot" style="background:#f0a020;"></div><div class="dot" style="background:#22c55e;"></div>
+        <span class="label">SENTINEL — Wafer Map</span>
+      </div>
+      <div class="demo-card-body">
+        <div id="wafer-container"></div>
+        <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--gray3);display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:#e03c2c;border-radius:2px;display:inline-block;"></span>CRITICAL</span>
+          <span style="font-size:11px;color:var(--gray3);display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:#f07020;border-radius:2px;display:inline-block;"></span>HIGH</span>
+          <span style="font-size:11px;color:var(--gray3);display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:#22c55e;border-radius:2px;display:inline-block;"></span>CLEAN</span>
+        </div>
+        <button onclick="genDemoReport()" id="demo-rpt-btn" style="margin-top:14px;width:100%;padding:10px;background:var(--black);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+          Generate AI Report
+        </button>
+        <div id="demo-rpt-out" style="display:none;margin-top:10px;padding:14px;background:var(--black);border-radius:10px;font-size:11.5px;color:rgba(255,255,255,.85);line-height:1.75;"></div>
+      </div>
+    </div>
+    <div class="demo-card">
+      <div class="demo-card-head">
+        <div class="dot" style="background:#e03c2c;"></div><div class="dot" style="background:#f0a020;"></div><div class="dot" style="background:#22c55e;"></div>
+        <span class="label">EduScope — Identification</span>
+      </div>
+      <div class="demo-card-body">
+        <div style="background:#0a0c10;border-radius:12px;height:160px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;overflow:hidden;">
+          <svg width="160" height="140" viewBox="0 0 160 140">
+            <defs><linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffd580" stop-opacity="0.3"/><stop offset="100%" stop-color="#f0a020" stop-opacity="0.15"/></linearGradient></defs>
+            <g opacity="0.9">
+              <rect x="10" y="10" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="32" cy="27" r="6" fill="#2244aa" opacity="0.7"/>
+              <rect x="57" y="10" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="79" cy="27" r="6" fill="#2244aa" opacity="0.7"/>
+              <rect x="104" y="10" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="126" cy="27" r="6" fill="#2244aa" opacity="0.7"/>
+              <rect x="10" y="48" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="32" cy="65" r="6" fill="#2244aa" opacity="0.7"/>
+              <rect x="57" y="48" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="79" cy="65" r="6" fill="#2244aa" opacity="0.7"/>
+              <rect x="104" y="48" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="126" cy="65" r="6" fill="#2244aa" opacity="0.7"/>
+              <rect x="10" y="86" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="32" cy="103" r="6" fill="#2244aa" opacity="0.7"/>
+              <rect x="57" y="86" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="79" cy="103" r="6" fill="#2244aa" opacity="0.7"/>
+              <rect x="104" y="86" width="45" height="35" rx="3" fill="url(#cg)" stroke="#f0a020" stroke-width="0.8"/><circle cx="126" cy="103" r="6" fill="#2244aa" opacity="0.7"/>
+            </g>
+            <rect x="0" y="0" width="160" height="140" fill="none" stroke="#14b8a6" stroke-width="1.5" rx="6" opacity="0.4"/>
+            <text x="80" y="136" text-anchor="middle" font-size="8" fill="#14b8a6" font-family="monospace" letter-spacing="1" opacity="0.7">SCANNING · 400×</text>
+          </svg>
+        </div>
+        <div class="specimen-card">
+          <div class="specimen-name">Onion Epidermal Cell</div>
+          <div class="specimen-sub">Allium cepa · Class 9 NCERT</div>
+          <div class="conf-bar"><div class="conf-fill" style="width:94%;"></div></div>
+          <div class="conf-label"><span>Confidence</span><span>94%</span></div>
+          <div class="ncert-tag">Fundamental Unit of Life</div>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:var(--gray);border-radius:8px;font-size:12px;color:#444;line-height:1.6;">
+          <strong style="color:var(--black);">EduScope says:</strong> Rectangular onion epidermal cells. Notice the rigid cell wall and nucleus pushed aside by the large central vacuole. No chloroplasts — underground scale leaf!
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="products" style="background:var(--gray);padding:100px 0;">
+  <div class="section-inner">
+    <div class="fade-up">
+      <div class="sec-eyebrow" lang-en>Two Products · One Pod</div>
+      <div class="sec-eyebrow" lang-hi style="display:none;">दो उत्पाद · एक Pod</div>
+      <h2 class="sec-title" lang-en>Pick your module.<br>Same hardware.</h2>
+      <h2 class="sec-title" lang-hi style="display:none;">अपना module चुनें।<br>एक ही hardware।</h2>
+    </div>
+    <div class="products-grid fade-up d1">
+      <div class="product-card">
+        <div class="product-card-top">
+          <div class="product-tag tag-sentinel">For Industry</div>
+          <h3>SENTINEL</h3>
+          <p class="tagline">AI wafer and PCB defect detection. 9 ADC classes, YOLOv8 bounding boxes, economic grading A+–F, and Claude inspection reports.</p>
+          <ul class="product-feats">
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>9 defect classes with industry ADC names</li>
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>YOLOv8 bounding boxes — exact defect location on image</li>
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>Grade A+–F + market value estimate per die</li>
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>Wafer mode + Single die/chip mode</li>
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>Claude AI inspection reports with RCA + KLARF export</li>
+          </ul>
+        </div>
+        <div class="product-card-bottom">
+          <div class="price-block">
+            <div class="price">₹999<span>/mo</span></div>
+            <div class="per">+ ₹6,000 hardware (one-time)</div>
+            <div class="trial">30-day free trial</div>
+          </div>
+          <a href="04b_sentinel_dashboard.html" class="product-cta">Open SENTINEL →</a>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-card-top">
+          <div class="product-tag tag-eduscope">For Schools</div>
+          <h3>EduScope</h3>
+          <p class="tagline">AI biology microscopy for CBSE/NCERT schools. Identifies specimens, explains concepts, generates quizzes.</p>
+          <ul class="product-feats">
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>9 NCERT specimens: Amoeba, Blood smear, Onion cell, Stomata and more</li>
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>Three.js 3D cell model viewer — auto-updates on detection</li>
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>Claude AI biology tutor — answers student questions live</li>
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>CBSE MCQ quiz generator, practical record auto-fill</li>
+            <li><span class="feat-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></span>Hindi + English interface, NCERT chapter links</li>
+          </ul>
+        </div>
+        <div class="product-card-bottom">
+          <div class="price-block">
+            <div class="price">₹499<span>/mo</span></div>
+            <div class="per">+ ₹6,000 hardware (one-time)</div>
+            <div class="trial">30-day free trial</div>
+          </div>
+          <a href="04c_eduscope_experiments.html" class="product-cta">Open EduScope →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section fade-up">
+  <div class="sec-eyebrow" lang-en>By The Numbers</div>
+  <div class="sec-eyebrow" lang-hi style="display:none;">संख्याओं में</div>
+  <h2 class="sec-title" lang-en>Built to perform.<br>Priced to scale.</h2>
+  <div class="numbers-grid">
+    <div class="num-cell"><div class="big">90<em>%+</em></div><p>Classification accuracy on both SENTINEL and EduScope modules</p></div>
+    <div class="num-cell"><div class="big">₹6<em>k</em></div><p>Complete WhiteMouse Pod — RPi + microscope + enclosure, all-in</p></div>
+    <div class="num-cell"><div class="big">1<em>–3s</em></div><p>Inference time on Raspberry Pi Zero 2W, TFLite INT8 model</p></div>
+    <div class="num-cell"><div class="big">50<em>%</em></div><p>Real SEM images in SENTINEL training data — field-collected</p></div>
+  </div>
+</section>
+
+<section id="pricing" style="background:var(--gray);padding:100px 0;">
+  <div class="section-inner">
+    <div class="fade-up" style="text-align:center;max-width:620px;margin:0 auto;">
+      <div class="sec-eyebrow" lang-en>Transparent Pricing</div>
+      <div class="sec-eyebrow" lang-hi style="display:none;">सरल मूल्य</div>
+      <h2 class="sec-title" lang-en style="margin:0 auto 16px;">One device.<br>Two modules. Clear pricing.</h2>
+      <p class="sec-desc" lang-en style="margin:0 auto;">₹6,000 WhiteMouse Pod hardware — one-time. Pick the plan. Annual billing saves 2 months.</p>
+    </div>
+    <div style="margin-top:40px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--red);margin-bottom:14px;">— SENTINEL · Industrial Defect Inspection</div>
+      <div class="pricing-grid fade-up d1">
+        <div class="plan-card">
+          <div class="plan-head">
+            <div class="plan-name">Starter</div>
+            <div class="plan-price">₹999<span>/month</span></div>
+            <div style="font-family:var(--mono);font-size:9px;color:#22c55e;margin-top:2px;margin-bottom:2px;">Annual: ₹9,500/yr · save ₹2,388 · 2.5 months free</div>
+            <div class="plan-desc">College labs, small PCB shops, and researchers.</div>
+          </div>
+          <div class="plan-body">
+            <ul class="plan-feats">
+              <li>500 die inspections / month</li>
+              <li>20 full wafer scans / month</li>
+              <li>YOLOv8 bounding box overlay</li>
+              <li>9 ADC defect classes + grade A+–F</li>
+              <li>Market value estimate per die</li>
+              <li>Wafer mode + Single die mode</li>
+              <li class="locked">Claude AI reports — Pro+</li>
+              <li class="locked">KLARF export — Pro+</li>
+            </ul>
+            <a href="04b_sentinel_dashboard.html" class="plan-btn plan-btn-outline">Start 30-day Trial</a>
+          </div>
+        </div>
+        <div class="plan-card featured">
+          <div class="plan-head">
+            <div class="plan-name">● Most Popular — Pro</div>
+            <div class="plan-price">₹2,499<span>/month</span></div>
+            <div style="font-family:var(--mono);font-size:9px;color:#22c55e;margin-top:2px;margin-bottom:2px;">Annual: ₹24,000/yr · save ₹5,988 · 2.5 months free</div>
+            <div class="plan-desc">Quality labs, MSME manufacturers, engineering teams.</div>
+          </div>
+          <div class="plan-body">
+            <ul class="plan-feats">
+              <li>3,000 die inspections / month</li>
+              <li>100 wafer scans / month</li>
+              <li>YOLOv8 boxes + Grad-CAM toggle</li>
+              <li>Claude AI inspection reports</li>
+              <li>Grade + pricing in every report</li>
+              <li>Wafer pattern detection</li>
+              <li>KLARF file export</li>
+              <li>FastAPI access</li>
+            </ul>
+            <a href="04b_sentinel_dashboard.html" class="plan-btn plan-btn-solid">Start 30-day Trial</a>
+          </div>
+        </div>
+        <div class="plan-card">
+          <div class="plan-head">
+            <div class="plan-name">Enterprise</div>
+            <div class="plan-price">₹7,999<span>/month</span></div>
+            <div style="font-family:var(--mono);font-size:9px;color:#22c55e;margin-top:2px;margin-bottom:2px;">Annual: ₹79,999/yr · ~1 month free</div>
+            <div class="plan-desc">Fabs, multi-device deployments, custom integrations.</div>
+          </div>
+          <div class="plan-body">
+            <ul class="plan-feats">
+              <li>Unlimited inspections</li>
+              <li>All Pro features</li>
+              <li>Custom defect class training</li>
+              <li>MES / ERP integration support</li>
+              <li>Multi-device dashboard</li>
+              <li>Priority support — 4hr SLA</li>
+              <li>On-premise deployment option</li>
+            </ul>
+            <a href="/cdn-cgi/l/email-protection#adc8c3d9c8dfdddfc4dec8edcbc8ccd9c5c8dfcbc1d483c4c3" class="plan-btn plan-btn-outline">Contact Us</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:32px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#14b8a6;margin-bottom:14px;">— EduScope &amp; Schools</div>
+      <div class="pricing-grid-2 fade-up d2">
+        <div class="plan-card">
+          <div class="plan-head">
+            <div class="plan-name">EduScope</div>
+            <div class="plan-price">₹499<span>/month</span></div>
+            <div style="font-family:var(--mono);font-size:9px;color:#22c55e;margin-top:2px;margin-bottom:2px;">Annual: ₹4,500/yr · save ₹1,488 · 3 months free</div>
+            <div class="plan-desc">NCERT-aligned AI biology lab for CBSE schools and colleges.</div>
+          </div>
+          <div class="plan-body">
+            <ul class="plan-feats">
+              <li>9 NCERT specimen classes</li>
+              <li>Three.js 3D cell model viewer</li>
+              <li>Claude biology tutor (budgeted)</li>
+              <li>CBSE MCQ quiz generator</li>
+              <li>Practical record auto-fill</li>
+              <li>Hindi + English interface</li>
+            </ul>
+            <a href="04c_eduscope_experiments.html" class="plan-btn plan-btn-outline">Start 30-day Trial</a>
+          </div>
+        </div>
+        <div class="plan-card institutional">
+          <div class="plan-head">
+            <div class="plan-name">Institutional / School License</div>
+            <div class="plan-price">₹3,600<span>/device/year</span></div>
+            <div class="plan-desc">Annual license for schools, colleges, and govt. science labs. SENTINEL + EduScope included.</div>
+          </div>
+          <div class="plan-body">
+            <ul class="plan-feats">
+              <li>SENTINEL + EduScope on every Pod</li>
+              <li>Campus plan: ₹9,600/year (unlimited Pods)</li>
+              <li>Govt. school: ₹1,800/device/year</li>
+              <li>Annual billing — fits school budgets</li>
+              <li>Dedicated onboarding call</li>
+              <li>Annual model update included</li>
+            </ul>
+            <a href="/cdn-cgi/l/email-protection#2754444f48484b5467414246534f4255414b5e094e49" class="plan-btn plan-btn-blue">Request Purchase Order</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="pricing-note fade-up d3"><strong>Hardware sold separately</strong> — WhiteMouse Pod ₹6,000 one-time. Annual plans: SENTINEL Starter ₹9,500/yr · Pro ₹24,000/yr · EduScope ₹4,500/yr. No credit card required to start.</p>
+  </div>
+</section>
+
+<section id="faq" class="section fade-up">
+  <div class="sec-eyebrow" lang-en>Questions</div>
+  <div class="sec-eyebrow" lang-hi style="display:none;">सवाल</div>
+  <h2 class="sec-title" lang-en>Frequently asked.</h2>
+  <h2 class="sec-title" lang-hi style="display:none;">अक्सर पूछे जाने वाले सवाल</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span lang-en>Do I need a router or internet connection to use the pod?</span><span lang-hi style="display:none;">क्या pod use करने के लिए router चाहिए?</span><div class="faq-icon"><svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg></div></div>
+      <div class="faq-a">No router needed. The WhiteMouse Pod creates its own WiFi hotspot (WhiteMouse-Pod). Your laptop connects directly. AI inference runs locally on the Raspberry Pi — no internet required. Internet is only needed for Claude AI report generation, which falls back to static RCA if offline.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span lang-en>Can I switch between SENTINEL and EduScope on the same pod?</span><span lang-hi style="display:none;">क्या एक pod पर दोनों modules use कर सकते हैं?</span><div class="faq-icon"><svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg></div></div>
+      <div class="faq-a">Yes. Both modules are installed on the pod. Edit one line in startup.sh (MODE="sentinel" or MODE="eduscope") and restart the service. You need an active subscription for each module you use.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span lang-en>What USB microscope works with the WhiteMouse Pod?</span><span lang-hi style="display:none;">कौन सा USB microscope काम करता है?</span><div class="faq-icon"><svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg></div></div>
+      <div class="faq-a">Any USB UVC-compatible digital microscope at 40–400×. We recommend Mustcam or AmScope USB models (₹800–1,400 on Amazon.in). Test it as a webcam on your PC first to confirm compatibility.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span lang-en>How accurate is the AI classification?</span><span lang-hi style="display:none;">AI classification कितनी accurate है?</span><div class="faq-icon"><svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg></div></div>
+      <div class="faq-a">SENTINEL achieves 90–94% accuracy on MobileNetV3 FP32 and 87–93% on YOLOv8s-cls. Training data includes 50% real SEM field-collected images. INT8 quantization drops accuracy by less than 2%. EduScope targets 88%+ across 9 biology specimens.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span lang-en>Is my inspection data sent to the cloud?</span><span lang-hi style="display:none;">क्या inspection data cloud पर जाता है?</span><div class="faq-icon"><svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg></div></div>
+      <div class="faq-a">No. Image capture and AI inference run entirely on the Raspberry Pi inside your facility. Only the text description of a result (not the image) is sent to the Claude API for report generation — and only when you explicitly request a report. Your wafer images never leave the device.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span lang-en>What if the Raspberry Pi Zero 2W is out of stock?</span><span lang-hi style="display:none;">अगर RPi Zero 2W stock में नहीं है?</span><div class="faq-icon"><svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg></div></div>
+      <div class="faq-a">Use Raspberry Pi 3A+ (~₹2,800 on Amazon.in) — same setup, same performance, full-size USB-A ports (no OTG hub needed). The software stack is standard Python — not RPi-specific.</div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="big-line" lang-en>Ready to see<br>what others <em>miss?</em></div>
+  <div class="big-line" lang-hi style="display:none;">देखने के लिए तैयार<br>जो दूसरे <em>चूकते हैं?</em></div>
+  <p lang-en>Start your 30-day free trial today. No credit card required.</p>
+  <p lang-hi style="display:none;">आज 30 दिन का free trial शुरू करें।</p>
+  <a href="/cdn-cgi/l/email-protection#fa929f969695ba9c9f9b8e929f889c9683d49394" class="contact-btn"><span class="__cf_email__" data-cfemail="573f323b3b3817313236233f3225313b2e793e39">[email&#160;protected]</span> →</a>
+</section>
+
+<footer>
+  <div class="footer-logo">FEATHER<span>FLY</span></div>
+  <div class="footer-links">
+    <a href="04b_sentinel_dashboard.html">SENTINEL</a>
+    <a href="04c_eduscope_experiments.html">EduScope</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/cdn-cgi/l/email-protection#bfd7dad3d3d0ffd9dadecbd7dacdd9d3c691d6d1">Contact</a>
+  </div>
+  <div class="footer-copy">© 2025 Featherfly. Made in India.</div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('scrolled',window.scrollY>20);},{passive:true});
+function genDemoReport(){
+  const btn=document.getElementById('demo-rpt-btn');
+  const out=document.getElementById('demo-rpt-out');
+  btn.innerHTML='Generating…';btn.disabled=true;
+  setTimeout(()=>{
+    out.style.display='block';
+    out.innerHTML='<div style="font-size:9px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:8px;">AI INSPECTION REPORT · SCAN_20250319</div>'
+      +'<strong style="color:#fff;">Grade A+ (Prime) · Est. Wafer Value $42,800</strong><br>'
+      +'Yield: 78.4% · Dies Scanned: 217 · Defects: 47<br><br>'
+      +'<strong style="color:#e03c2c;">Dominant: Conductive Bridge / Metal Short</strong><br>'
+      +'ADC Type: Killer · Confidence: 91.2% · 12 cells, top-left quadrant<br><br>'
+      +'<strong style="color:rgba(255,255,255,.7);">Root Cause:</strong><br>'
+      +'Litho over-exposure or resist reflow at PEB. Review exposure dose (mJ/cm²) and PEB temperature. Check photomask integrity.<br><br>'
+      +'<strong style="color:rgba(255,255,255,.7);">Recommendations:</strong><br>'
+      +'1. Reduce exposure dose 3–5% and re-qualify<br>'
+      +'2. Run SPC chart on BRIDGE defect count — check for drift<br>'
+      +'3. Route affected dies to KGD testing before packaging<br><br>'
+      +'<span style="font-size:10px;color:rgba(255,255,255,.3);">Grade: A+ 40% · A 22% · B 13% · C 9% · D 10% · F 6%</span>';
+    btn.innerHTML='✓ Report Generated';btn.style.background='#16a34a';
+  },1400);
+}
+function toggleLang(){const h=document.body.classList.toggle('hindi');document.getElementById('langBtn').textContent=h?'English':'हिंदी';document.querySelectorAll('[lang-en]').forEach(el=>el.style.display=h?'none':'');document.querySelectorAll('[lang-hi]').forEach(el=>el.style.display=h?'':'none');}
+function toggleFaq(q){const item=q.closest('.faq-item'),was=item.classList.contains('open');document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));if(!was)item.classList.add('open');}
+const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis');});},{threshold:0.12});
+document.querySelectorAll('.fade-up').forEach(el=>io.observe(el));
+(function(){
+  const CLS={BRIDGE:'#e03c2c',CRACK:'#b02010',VIA:'#e03c2c',OPEN:'#c02820',PARTICLE:'#f07020',CMP:'#f0a020',LER:'#e8c830',OTHERS:'#9090a0',CLEAN:'#22c55e'};
+  const SEV={BRIDGE:'CRITICAL',CRACK:'CRITICAL',VIA:'CRITICAL',OPEN:'CRITICAL',PARTICLE:'HIGH',CMP:'MEDIUM',LER:'MEDIUM',OTHERS:'REVIEW',CLEAN:'PASS'};
+  const ROWS=10,COLS=10,cells=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const x=(c/(COLS-1))*2-1,y=(r/(ROWS-1))*2-1;if(x*x+y*y>1.05)continue;const rnd=Math.random();let cls;if(rnd<0.75)cls='CLEAN';else if(rnd<0.82)cls='BRIDGE';else if(rnd<0.87)cls='PARTICLE';else if(rnd<0.91)cls='CMP';else if(rnd<0.94)cls='CRACK';else if(rnd<0.96)cls='LER';else if(rnd<0.98)cls='OPEN';else cls='OTHERS';cells.push({r,c,cls,x,y,conf:(0.75+Math.random()*0.24).toFixed(2)});}
+  const container=document.getElementById('wafer-container');
+  const W=container.offsetWidth||280;
+  const tip=d3.select('body').append('div').style('position','fixed').style('background','#0a0a0a').style('color','#fff').style('font-size','11px').style('font-family','var(--mono)').style('padding','8px 12px').style('border-radius','6px').style('pointer-events','none').style('opacity','0').style('z-index','9999').style('line-height','1.6');
+  const svg=d3.select('#wafer-container').append('svg').attr('width',W).attr('height',W).attr('viewBox',`0 0 ${W} ${W}`);
+  const cx=W/2,cy=W/2,rad=W/2-10;
+  svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',rad).attr('fill','#f5f5f7').attr('stroke','#d2d2d7').attr('stroke-width',1);
+  const cs=(rad*2)/COLS-1.5;
+  svg.selectAll('.cell').data(cells).enter().append('rect').attr('class','cell').attr('x',d=>cx+d.x*rad-cs/2).attr('y',d=>cy+d.y*rad-cs/2).attr('width',cs).attr('height',cs).attr('rx',2).attr('fill',d=>CLS[d.cls]).attr('opacity',d=>d.cls==='CLEAN'?0.5:0.85).attr('cursor','pointer')
+    .on('mouseenter',function(event,d){d3.select(this).attr('opacity',1).attr('stroke','#0a0a0a').attr('stroke-width',1.5);tip.style('opacity',1).html(`<strong>${d.cls}</strong> · ${SEV[d.cls]}<br>Conf: ${(d.conf*100).toFixed(0)}%`);})
+    .on('mousemove',event=>{tip.style('left',(event.clientX+14)+'px').style('top',(event.clientY-10)+'px');})
+    .on('mouseleave',function(event,d){d3.select(this).attr('opacity',d.cls==='CLEAN'?0.5:0.85).attr('stroke','none');tip.style('opacity',0);});
+  svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',rad).attr('fill','none').attr('stroke','#d2d2d7').attr('stroke-width',1.5);
+  const fy=cy+rad-8;
+  svg.append('line').attr('x1',cx-20).attr('y1',fy).attr('x2',cx+20).attr('y2',fy).attr('stroke','#888890').attr('stroke-width',3).attr('stroke-linecap','round');
+}());
+</script>
+</body>
+</html>
