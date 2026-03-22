@@ -121,7 +121,7 @@ body{background:var(--w);color:var(--b);font-family:var(--ff);display:flex;flex-
   <div class="tb-right">
     <div class="tb-pod"><div class="dot-live"></div><span id="pod-status">Connecting…</span></div>
     <div class="tb-btn" onclick="location.href='experiments.html'">← Experiments</div>
-    <div class="tb-btn" onclick="location.href='index.html'">← Home</div>
+    <div class="tb-btn" onclick="location.href='/'">← Home</div>
   </div>
 </div>
 <div id="layout">
@@ -152,11 +152,12 @@ body{background:var(--w);color:var(--b);font-family:var(--ff);display:flex;flex-
   <div id="center">
     <div class="c-hd"><h2 id="c-title">3D Cell Viewer</h2></div>
     <div id="viewer-wrap">
-      <!-- 3D cell viewer — src set by JS so it includes ?specimen=EXP_KEY -->
+      <!-- 3D cell viewer — SSE-connected, auto-updates on new specimen -->
       <iframe id="cell-viewer-iframe"
-        src=""
+        src="threejs_cell_viewer.html"
         style="width:100%;height:100%;border:none;border-radius:8px;background:#0a0c10;"
-        title="3D Cell Viewer">
+        title="3D Cell Viewer"
+        onerror="this.style.display='none';document.getElementById('viewer-ph').style.display='flex';">
       </iframe>
       <div id="viewer-ph" style="display:none;">
         <div class="vph-icon" id="vph-icon">🔬</div>
@@ -254,9 +255,6 @@ const EXP=BIO[EXP_KEY]||BIO['ONION_CELL'];
 
 (function init(){
   document.getElementById('tb-exp').innerHTML=`Experiment: <strong>${EXP.name}</strong>`;
-  // Set iframe src with correct specimen so 3D model loads immediately
-  const vif = document.getElementById('cell-viewer-iframe');
-  if (vif) vif.src = 'threejs_cell_viewer.html?specimen=' + EXP_KEY;
   document.getElementById('c-title').textContent='3D Cell Viewer — '+EXP.name;
   document.getElementById('vph-icon').textContent=EXP.icon;
   document.getElementById('vph-name').textContent=EXP.name;
@@ -433,47 +431,11 @@ function connectSSE() {
         }
       } catch(e) { document.getElementById('pod-status').textContent = 'Pod not connected'; }
     }, 3000);
-    setTimeout(() => { clearInterval(fb); connectSSE();
-
-// When iframe finishes loading, send the initial specimen via postMessage
-// This handles the race condition between iframe load and EXP_KEY availability
-const _vif = document.getElementById('cell-viewer-iframe');
-if (_vif) {
-  _vif.addEventListener('load', function() {
-    setTimeout(() => {
-      if (_vif.contentWindow) {
-        _vif.contentWindow.postMessage({
-          type: 'FEATHERFLY_SPECIMEN',
-          specimen: EXP_KEY,
-          confidence: 0.95,
-          chapter: EXP.ch || ''
-        }, '*');
-      }
-    }, 200);  // small delay to let viewer JS initialise
-  });
-} }, 5000);
+    setTimeout(() => { clearInterval(fb); connectSSE(); }, 5000);
   };
   _es.onopen = function() { document.querySelector('.dot-live').style.background = '#22c55e'; };
 }
 connectSSE();
-
-// When iframe finishes loading, send the initial specimen via postMessage
-// This handles the race condition between iframe load and EXP_KEY availability
-const _vif = document.getElementById('cell-viewer-iframe');
-if (_vif) {
-  _vif.addEventListener('load', function() {
-    setTimeout(() => {
-      if (_vif.contentWindow) {
-        _vif.contentWindow.postMessage({
-          type: 'FEATHERFLY_SPECIMEN',
-          specimen: EXP_KEY,
-          confidence: 0.95,
-          chapter: EXP.ch || ''
-        }, '*');
-      }
-    }, 200);  // small delay to let viewer JS initialise
-  });
-}
 
 function animateCard() {
   const rc = document.getElementById('result-card') || document.getElementById('rc');

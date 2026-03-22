@@ -2,1362 +2,1004 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>EduScope 3D Cell Viewer</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{width:100%;height:100%;overflow:hidden;background:#0d1117;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#e8e4dc}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0c10;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
+#cv{position:absolute;inset:0;display:block;cursor:grab}
+#cv:active{cursor:grabbing}
 
-/* TABS — fixed top */
-#tabs{position:fixed;top:0;left:0;right:0;height:38px;z-index:10;display:flex;background:#080b10;border-bottom:1px solid #1a1f2e;overflow-x:auto;scrollbar-width:none}
-#tabs::-webkit-scrollbar{display:none}
-.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 10px;cursor:pointer;border-bottom:2px solid transparent;transition:all .18s;flex-shrink:0;min-width:60px;user-select:none;height:100%}
-.tab:hover{background:rgba(255,255,255,.05)}
-.tab.act{border-bottom-color:#14b8a6;background:rgba(20,184,166,.07)}
-.tab-icon{font-size:14px;line-height:1}
-.tab-name{font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.32);transition:color .18s}
-.tab.act .tab-name{color:#14b8a6}
+/* HUD TOP — specimen name + chapter */
+#hud-top{position:absolute;top:14px;left:16px;right:64px;pointer-events:none}
+#spec-name{font-size:16px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.2;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+#spec-lat{font-size:10px;color:rgba(255,255,255,.42);margin-top:2px;font-style:italic}
+#spec-ch{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px;line-height:1.3}
 
-/* BOTTOM BAR — fixed bottom */
-#bot{position:fixed;bottom:0;left:0;right:0;height:28px;z-index:10;background:#080b10;border-top:1px solid #1a1f2e;display:flex;align-items:center;padding:0 12px;gap:12px}
-.dot{width:5px;height:5px;border-radius:50%;background:#2a2a3a;transition:background .4s;flex-shrink:0}
+/* CONNECTION DOT */
+#dot-wrap{position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;background:#444;flex-shrink:0;transition:background .4s}
 .dot.live{background:#22c55e;animation:bl 2s infinite}
 .dot.err{background:#e03c2c}
-@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
-#bot-txt{font-size:8.5px;color:rgba(255,255,255,.22);letter-spacing:.04em}
-#bot-conf{font-size:9px;font-weight:700;color:rgba(255,255,255,.4);margin-left:auto}
-#bot-drag{font-size:8px;color:rgba(255,255,255,.15)}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.25}}
+#dot-txt{font-size:9px;color:rgba(255,255,255,.28);letter-spacing:.04em;text-transform:uppercase}
 
-/* CANVAS — absolutely fills middle area */
-#canvas-wrap{
-  position:fixed;
-  top:38px;
-  left:0;
-  right:265px;
-  bottom:28px;
-  background:#0d1117;
+/* FUN FACT — centre overlay, fades in/out */
+#fun-fact{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-200%);
+  max-width:260px;text-align:center;
+  font-size:11.5px;color:rgba(255,255,255,.78);line-height:1.6;
+  background:rgba(0,0,0,.65);padding:9px 13px;border-radius:8px;
+  backdrop-filter:blur(4px);pointer-events:none;
+  opacity:0;transition:opacity .6s ease
 }
-#cv{
-  position:absolute;
-  top:0;left:0;
-  width:100%;height:100%;
-  display:block;
-}
-#lbl-svg{
-  position:absolute;
-  top:0;left:0;
-  width:100%;height:100%;
-  pointer-events:none;
-  overflow:visible;
-}
-.lbl-txt{pointer-events:all;cursor:pointer;font-weight:700}
+#fun-fact.show{opacity:1}
 
-/* PANEL — fixed right */
-#panel{
-  position:fixed;
-  top:38px;
-  right:0;
-  width:265px;
-  bottom:28px;
-  background:#080b10;
-  border-left:1px solid #1a1f2e;
-  overflow-y:auto;
-  padding:14px;
-  scrollbar-width:thin;
-  scrollbar-color:#1a1f2e transparent;
+/* STRUCTURE PILLS — bottom centre */
+#structs{
+  position:absolute;bottom:52px;left:0;right:0;
+  display:flex;gap:5px;justify-content:center;flex-wrap:wrap;
+  padding:0 12px;pointer-events:none
 }
-#panel::-webkit-scrollbar{width:3px}
-#panel::-webkit-scrollbar-thumb{background:#1a1f2e}
+.spill{
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);
+  border-radius:20px;padding:3px 9px;
+  font-size:9.5px;color:rgba(255,255,255,.68);
+  opacity:0;transform:translateY(6px);
+  transition:opacity .3s ease,transform .3s ease
+}
+.spill.vis{opacity:1;transform:translateY(0)}
 
-/* Panel content styles */
-.p-name{font-size:14px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:2px}
-.p-lat{font-size:9.5px;color:rgba(255,255,255,.3);font-style:italic;margin-bottom:2px}
-.p-ch{font-size:9.5px;color:#14b8a6;margin-bottom:8px}
-.p-stain{font-size:8.5px;color:rgba(255,255,255,.22);margin-bottom:10px;padding:4px 7px;background:rgba(255,255,255,.03);border-radius:4px;border-left:2px solid rgba(255,255,255,.1);line-height:1.5}
-.divider{height:1px;background:#1a1f2e;margin:10px 0}
-.sec-lbl{font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:6px}
-.ov-item{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-.ov-item:last-child{border-bottom:none}
-.ov-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
-.ov-body{font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.55)}
-.ov-body strong{color:rgba(255,255,255,.82);display:block;font-size:11px}
-.back-btn{font-size:9.5px;color:rgba(255,255,255,.28);cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:4px}
-.back-btn:hover{color:rgba(255,255,255,.55)}
-.s-name{font-size:15px;font-weight:700;margin-bottom:6px}
-.s-fn{font-size:11.5px;color:rgba(255,255,255,.62);line-height:1.65;margin-bottom:8px}
-.s-ncert{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:rgba(20,184,166,.12);color:#14b8a6;margin-bottom:9px}
-.s-fact{font-size:10.5px;color:rgba(255,255,255,.42);line-height:1.65;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid #14b8a6}
-.s-fact::before{content:"💡 "}
-.anim-note{margin-top:10px;font-size:9.5px;color:#f0a020;padding:5px 8px;background:rgba(240,160,32,.06);border-radius:5px;border-left:2px solid #f0a020;line-height:1.5}
-.xs-btn{font-size:8.5px;font-weight:700;padding:3px 9px;border-radius:4px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);cursor:pointer;flex-shrink:0;letter-spacing:.04em;}
-.xs-btn.act{background:rgba(20,184,166,.15);border-color:rgba(20,184,166,.5);color:#14b8a6;}
-.xs-note{margin-top:8px;font-size:9px;color:#14b8a6;padding:4px 8px;background:rgba(20,184,166,.06);border-radius:4px;border-left:2px solid #14b8a6;line-height:1.5}
+/* CONFIDENCE RING — bottom right */
+#ring-wrap{position:absolute;bottom:14px;right:14px;width:52px;height:52px}
+#ring-cv{width:52px;height:52px}
+#ring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+
+/* MODE LABEL — bottom left */
+#mode-lbl{position:absolute;bottom:14px;left:14px;font-size:9px;color:rgba(255,255,255,.22);letter-spacing:.06em;text-transform:uppercase}
+
+/* HINT — shown briefly on first interaction */
+#hint{position:absolute;top:50%;left:50%;transform:translate(-50%,60px);font-size:10px;color:rgba(255,255,255,.25);letter-spacing:.06em;text-transform:uppercase;pointer-events:none;opacity:0;transition:opacity .5s}
+#hint.show{opacity:1}
 </style>
 </head>
 <body>
+<canvas id="cv"></canvas>
 
-<!-- TABS -->
-<div id="tabs">
-  <div class="tab act" data-spec="ONION_CELL"   onclick="tabClick(this)"><span class="tab-icon">🧅</span><span class="tab-name">Onion</span></div>
-  <div class="tab"     data-spec="CHEEK_CELL"   onclick="tabClick(this)"><span class="tab-icon">🫦</span><span class="tab-name">Cheek</span></div>
-  <div class="tab"     data-spec="BLOOD_SMEAR"  onclick="tabClick(this)"><span class="tab-icon">🩸</span><span class="tab-name">Blood</span></div>
-  <div class="tab"     data-spec="STOMATA"      onclick="tabClick(this)"><span class="tab-icon">🍃</span><span class="tab-name">Stomata</span></div>
-  <div class="tab"     data-spec="AMOEBA"       onclick="tabClick(this)"><span class="tab-icon">🦠</span><span class="tab-name">Amoeba</span></div>
-  <div class="tab"     data-spec="YEAST"        onclick="tabClick(this)"><span class="tab-icon">🍺</span><span class="tab-name">Yeast</span></div>
-  <div class="tab"     data-spec="BACTERIA"     onclick="tabClick(this)"><span class="tab-icon">🔬</span><span class="tab-name">Bacteria</span></div>
-  <div class="tab"     data-spec="POLLEN"       onclick="tabClick(this)"><span class="tab-icon">🌸</span><span class="tab-name">Pollen</span></div>
-  <div class="tab"     data-spec="FUNGI_HYPHAE" onclick="tabClick(this)"><span class="tab-icon">🍄</span><span class="tab-name">Fungi</span></div>
+<!-- HUD -->
+<div id="hud-top">
+  <div id="spec-name">EduScope 3D Viewer</div>
+  <div id="spec-lat"></div>
+  <div id="spec-ch">Place a slide and start scanning</div>
 </div>
-
-<!-- CANVAS AREA -->
-<div id="canvas-wrap">
-  <canvas id="cv"></canvas>
-  <svg id="lbl-svg"></svg>
-</div>
-
-<!-- RIGHT PANEL -->
-<div id="panel"><div id="pc"></div></div>
-
-<!-- BOTTOM BAR -->
-<div id="bot">
+<div id="dot-wrap">
   <div class="dot" id="dot"></div>
-  <span id="bot-txt">waiting for pod</span>
-  <span id="bot-conf"></span>
-  <span id="bot-drag">drag · tap structure to learn</span>
-  <span class="xs-btn" id="xs-btn" onclick="toggleXS()">✂ Cross-section</span>
+  <span id="dot-txt">waiting</span>
 </div>
-<canvas id="sc-cv" style="position:fixed;bottom:28px;left:0;pointer-events:none;z-index:5;"></canvas>
+<div id="fun-fact"></div>
+<div id="structs"></div>
+<div id="ring-wrap">
+  <canvas id="ring-cv" width="52" height="52"></canvas>
+  <div id="ring-val">—</div>
+</div>
+<div id="mode-lbl">EduScope · WhiteMouse Pod</div>
+<div id="hint">drag to rotate</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="document.body.innerHTML='<div style=color:#fff;padding:20px;font-family:monospace>THREE.js failed to load. Check internet connection.</div>'"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
 
-// ══════════════════════════════════════════════════════════════════════
-// SPECIMEN DATA — colors tuned to match actual microscope images
-// ══════════════════════════════════════════════════════════════════════
-const DATA = {
-  ONION_CELL:{
-    name:'Onion Root Tip',latin:'Allium cepa (root)',ch:'Class 9 · Cell Cycle & Division',
-    stain:'Acetocarmine — cells appear orange-brown, nuclei dark red',
-    overview:[
-      {col:'#d4895a',lbl:'Cell wall',txt:'Rectangular brick shape — visible as lighter lines between cells'},
-      {col:'#8b2500',lbl:'Nucleus',txt:'Large dark-red oval — acetocarmine stains DNA deep red'},
-      {col:'#c0180f',lbl:'Chromosomes',txt:'Visible during mitosis — dark red condensed threads in dividing cells'},
-      {col:'#e8b090',lbl:'Cytoplasm',txt:'Pale orange background — less stain taken up than nucleus'},
-    ],
-    anim:'none',animNote:'Tip: Look for cells in different stages of mitosis — this is why onion root tip is used to study cell division!',
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════════════
+const IN_IFRAME = window.self !== window.top;
+const API = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+  ? 'http://localhost:8001'
+  : 'https://eduscope-api.featherfly.in';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// METADATA — matches eduscope_rca.py knowledge base
+// ═══════════════════════════════════════════════════════════════════════════
+const META = {
+  ONION_CELL: {
+    name:'Onion Epidermal Cell', lat:'Allium cepa', ch:'Class 9 · Fundamental Unit of Life',
+    structs:['Cell wall','Large vacuole','Nucleus','Cell membrane'],
+    fact:'The large central vacuole pushes the nucleus to the edge — no room for chloroplasts underground!',
+    col:0xffe090, accent:'#f0a020'
   },
-  CHEEK_CELL:{
-    name:'Human Cheek Cell',latin:'Buccal epithelial',ch:'Class 9 · Fundamental Unit of Life',
-    stain:'Methylene blue — cell pale blue, nucleus dark blue',
-    overview:[
-      {col:'#b8d4ee',lbl:'Cell membrane',txt:'Flexible — no cell wall. Gives the irregular polygon shape'},
-      {col:'#1a3aaa',lbl:'Nucleus',txt:'Dark blue, centrally placed, oval'},
-      {col:'#c8dff0',lbl:'Cytoplasm',txt:'Pale granular blue — very light compared to nucleus'},
-    ],
-    anim:'none',animNote:null,
+  CHEEK_CELL: {
+    name:'Human Cheek Cell', lat:'Buccal epithelial', ch:'Class 9 · Fundamental Unit of Life',
+    structs:['Cell membrane','Nucleus','Cytoplasm','No cell wall'],
+    fact:'You shed and replace your entire mouth lining every 3–5 days. These cells are already on their way out!',
+    col:0xc8e8ff, accent:'#60a0e0'
   },
-  BLOOD_SMEAR:{
-    name:'Human Blood Smear',latin:'Homo sapiens',ch:'Class 11 · Body Fluids & Circulation',
-    stain:'Leishman stain — RBCs pale pink, WBC nucleus purple',
-    overview:[
-      {col:'#f0c0b8',lbl:'RBC',txt:'Pale pink biconcave disc with lighter centre — NO nucleus'},
-      {col:'#7733bb',lbl:'WBC nucleus',txt:'Multi-lobed dark purple nucleus — neutrophil most common'},
-      {col:'#e8d0e0',lbl:'WBC cytoplasm',txt:'Pale halo around purple nucleus'},
-      {col:'#f8d0d0',lbl:'Platelet',txt:'Tiny pink fragments between RBCs'},
-    ],
-    anim:'drift',animNote:'RBCs gently drift — in real blood they flow single-file through capillaries',
+  BLOOD_SMEAR: {
+    name:'Human Blood Smear', lat:'Homo sapiens', ch:'Class 11 · Body Fluids & Circulation',
+    structs:['RBC (no nucleus)','WBC (with nucleus)','Platelets'],
+    fact:'Each RBC carries ~270 million haemoglobin molecules. It lost its nucleus to make room for more!',
+    col:0xff6644, accent:'#e03c2c'
   },
-  STOMATA:{
-    name:'Stomata + Guard Cells',latin:'Leaf epidermis',ch:'Class 11 · Transport in Plants',
-    stain:'Unstained / nail varnish peel — green from natural chlorophyll',
-    overview:[
-      {col:'#5a8a2a',lbl:'Guard cells',txt:'Kidney-shaped green pair — only epidermal cells with chloroplasts'},
-      {col:'#2a5a10',lbl:'Stoma (pore)',txt:'Dark oval slit between guard cells'},
-      {col:'#78b040',lbl:'Epidermal cells',txt:'Surrounding larger cells — no chloroplasts'},
-    ],
-    anim:'stomata',animNote:'Click the pore to watch the stomata open and close',
+  STOMATA: {
+    name:'Stomata + Guard Cells', lat:'Leaf epidermis', ch:'Class 11 · Transport in Plants',
+    structs:['Guard cells','Stoma (pore)','Chloroplasts','Epidermal cells'],
+    fact:'Guard cells are the ONLY epidermal cells with chloroplasts — they need ATP to open the pore!',
+    col:0xff8844, accent:'#22aa44'
   },
-  AMOEBA:{
-    name:'Amoeba proteus',latin:'Kingdom Protista',ch:'Class 8 · Microorganisms',
-    stain:'Unstained (live) — translucent grey-white, food vacuole green',
-    overview:[
-      {col:'#c8d8d8',lbl:'Cell body',txt:'Translucent irregular blob — cytoplasm streams continuously'},
-      {col:'#aacccc',lbl:'Pseudopodia',txt:'False feet extending outward — used for movement and feeding'},
-      {col:'#2255aa',lbl:'Nucleus',txt:'Slightly darker oval region'},
-      {col:'#22aa44',lbl:'Food vacuole',txt:'Green — captured algae or food being digested'},
-      {col:'#ddeeff',lbl:'Contractile vacuole',txt:'Clear circle — pumps out excess water'},
-    ],
-    anim:'amoeba',animNote:'Pseudopodia extend and retract continuously — watch the edges move',
+  AMOEBA: {
+    name:'Amoeba proteus', lat:'Kingdom Protista', ch:'Class 8 · Microorganisms',
+    structs:['Pseudopodia','Nucleus','Contractile vacuole','Food vacuole'],
+    fact:'Amoeba has no fixed shape — it changes form every few seconds as pseudopodia extend and retract!',
+    col:0x88bbcc, accent:'#14b8a6'
   },
-  YEAST:{
-    name:'Yeast (Saccharomyces)',latin:'Kingdom Fungi',ch:'Class 11 · Biological Classification',
-    stain:'Unstained / methylene blue — pale oval with thin dark outline',
-    overview:[
-      {col:'#d8e8f0',lbl:'Mother cell',txt:'Oval, thin-walled, mostly transparent — pale outline visible'},
-      {col:'#b8d0e8',lbl:'Bud (daughter cell)',txt:'Smaller oval still attached to mother at one point'},
-      {col:'#90b8d8',lbl:'Budding chain',txt:'Mother→bud→bud — can stay attached in short chains'},
-    ],
-    anim:'yeast',animNote:'Bud grows slowly on the mother cell — asexual reproduction by budding',
+  YEAST: {
+    name:'Yeast (Saccharomyces)', lat:'Kingdom Fungi', ch:'Class 11 · Biological Classification',
+    structs:['Mother cell','Bud (daughter)','Bud scar','Vacuole'],
+    fact:'Yeast has been making bread rise for 7,000 years. You can watch budding happen in real time!',
+    col:0xffe080, accent:'#f0a020'
   },
-  BACTERIA:{
-    name:'Bacteria (bacillus form)',latin:'Kingdom Monera',ch:'Class 8 · Microorganisms',
-    stain:'Methylene blue — deep blue rods, much smaller than eukaryotic cells',
-    overview:[
-      {col:'#3377cc',lbl:'Bacillus rod',txt:'Rod-shaped. 1–5 µm — 10× smaller than a human cell'},
-      {col:'#4488dd',lbl:'Dividing pair',txt:'Binary fission — one cell elongates then splits in two'},
-      {col:'#2255aa',lbl:'Cell wall',txt:'Peptidoglycan — different from plant cellulose'},
-    ],
-    anim:'bacteria',animNote:'Watch: one pair is actively dividing (binary fission)',
+  BACTERIA: {
+    name:'Bacteria (bacillus)', lat:'Kingdom Monera', ch:'Class 8 · Microorganisms',
+    structs:['Cell wall','Nucleoid (no nucleus)','Cell membrane','Flagella'],
+    fact:'One bacterium can become 2 billion in just 8 hours. Your gut has more bacteria than human cells!',
+    col:0x4488cc, accent:'#2a7fff'
   },
-  POLLEN:{
-    name:'Pollen Grain',latin:'Male gametophyte',ch:'Class 12 · Sexual Reproduction in Plants',
-    stain:'Acetocarmine / unstained — yellow, surface texture visible',
-    overview:[
-      {col:'#ffcc22',lbl:'Exine (outer wall)',txt:'Sporopollenin — most resistant biological substance known'},
-      {col:'#ee9900',lbl:'Spines',txt:'Surface texture unique to species — used to identify plants'},
-      {col:'#cc7700',lbl:'Germination pore',txt:'Pollen tube grows from here to reach the ovule'},
-    ],
-    anim:'none',animNote:null,
+  POLLEN: {
+    name:'Pollen Grain', lat:'Male gametophyte', ch:'Class 12 · Sexual Reproduction in Plants',
+    structs:['Exine (outer wall)','Spines (sporopollenin)','Germination pore','Vegetative cell'],
+    fact:'Sporopollenin in the exine survives 10,000 years — scientists identify plants from Ice Age pollen!',
+    col:0xffcc22, accent:'#f0a020'
   },
-  FUNGI_HYPHAE:{
-    name:'Fungal Hyphae (Rhizopus)',latin:'Kingdom Fungi',ch:'Class 10 · How Organisms Reproduce',
-    stain:'Cotton blue — hyphae blue-green, sporangia very dark',
-    overview:[
-      {col:'#77bbaa',lbl:'Hypha (filament)',txt:'Thread-like tube — no cross-walls (coenocytic = multinucleate)'},
-      {col:'#111111',lbl:'Sporangium',txt:'Black round spore case at tip — bursts to release thousands of spores'},
-      {col:'#55aa88',lbl:'Rhizoid',txt:'Anchors fungus to food source, secretes digestive enzymes'},
-    ],
-    anim:'none',animNote:null,
-  },
+  FUNGI_HYPHAE: {
+    name:'Fungal Hyphae (Rhizopus)', lat:'Kingdom Fungi', ch:'Class 10 · How Organisms Reproduce',
+    structs:['Hyphae (filaments)','Sporangium','Sporangiophore','Rhizoids'],
+    fact:"The world's largest living organism is a honey fungus in Oregon covering 8.9 km² — a single mycelium!",
+    col:0x88ccaa, accent:'#14b8a6'
+  }
 };
 
-// Structure lessons
-const LESSONS = {
-  // ONION ROOT TIP
-  onion_wall:{name:'Cell Wall',col:'#d4895a',fn:'Made of cellulose — gives the rectangular brick-like shape. Under acetocarmine stain it appears as a pale line between cells.',ncert:'Class 9, Ch.5',fact:'The cell wall is NOT living — it is secreted by the cell membrane. It provides shape and protection.'},
-  onion_nuc: {name:'Nucleus',col:'#8b2500',fn:'Dark red oval — acetocarmine binds strongly to DNA. The large nucleus means the cell is metabolically very active.',ncert:'Class 9, Ch.5',fact:'Root tip cells divide rapidly to push the root through soil. This is why root tip is used to study mitosis!'},
-  onion_chrom:{name:'Chromosomes (mitosis)',col:'#c0180f',fn:'Visible only during cell division. Acetocarmine stains condensed chromosomes deep red. You can identify the stage of mitosis by chromosome arrangement.',ncert:'Class 9, Ch.10 — Cell Cycle',fact:'Onion (Allium cepa) has only 16 chromosomes — easy to count and study under a school microscope!'},
-  onion_cyt: {name:'Cytoplasm',col:'#e8b090',fn:'Pale orange background. Takes up less acetocarmine than the nucleus. Contains all organelles but none are visible at school magnification.',ncert:'Class 9, Ch.5',fact:'The cytoplasm is 70% water. All biochemical reactions of the cell happen here.'},
-  // CHEEK
-  cheek_mem: {name:'Cell Membrane',col:'#b8d4ee',fn:'No rigid wall — animal cells rely on this flexible phospholipid bilayer. Gives the irregular polygon shape.',ncert:'Class 9, Ch.5',fact:'You shed and replace your entire mouth lining every 3–5 days. Today\'s cheek cells are already on their way out!'},
-  cheek_nuc: {name:'Nucleus',col:'#1a3aaa',fn:'Dark blue, oval, centrally located. Methylene blue stains the acidic DNA intensely.',ncert:'Class 9, Ch.5',fact:'A single nucleus contains ~2 metres of DNA coiled so tightly it fits in a 6-micrometre space.'},
-  cheek_cyt: {name:'Cytoplasm',col:'#c8dff0',fn:'Very pale blue granular material. Much lighter than the nucleus because it has less DNA to stain.',ncert:'Class 9, Ch.5',fact:'The cytoplasm contains thousands of ribosomes — each one a tiny protein-making machine.'},
-  // BLOOD
-  blood_rbc: {name:'RBC — Erythrocyte',col:'#f0c0b8',fn:'Pale pink biconcave disc. The pale centre is KEY — it proves the biconcave shape. NO nucleus — removed to maximise haemoglobin space.',ncert:'Class 11, Ch.18',fact:'Each RBC carries ~270 million haemoglobin molecules. It lives ~120 days then gets recycled by the spleen.'},
-  blood_wbc: {name:'WBC — Neutrophil',col:'#7733bb',fn:'Multi-lobed dark purple nucleus surrounded by pale cytoplasm. Most common WBC. First responder to bacterial infection.',ncert:'Class 11, Ch.18',fact:'Neutrophils live only 5–7 days — they sacrifice themselves fighting bacteria and become pus!'},
-  blood_cyt: {name:'WBC Cytoplasm',col:'#e8d0e0',fn:'Pale halo around the nucleus. The boundary between WBC cytoplasm and surrounding plasma is the cell membrane.',ncert:'Class 11, Ch.18',fact:'Remember WBC types: Never Eat Bad Mouldy Lettuce = Neutrophil, Eosinophil, Basophil, Monocyte, Lymphocyte'},
-  blood_plt: {name:'Platelet — Thrombocyte',col:'#f8d0d0',fn:'Not a full cell — a tiny cytoplasmic fragment from megakaryocytes. Clumps at wounds to form clots.',ncert:'Class 11, Ch.18',fact:'Normal platelet count: 1.5–4 lakh per µL. Low platelets = key dengue warning sign.'},
-  // STOMATA
-  stom_guard:{name:'Guard Cells',col:'#5a8a2a',fn:'Kidney-shaped pair. Open when turgid (K⁺ ions pump in, water follows). Close when flaccid. The ONLY epidermal cells with chloroplasts.',ncert:'Class 11, Ch.11',fact:'Guard cells are the only epidermal cells with chloroplasts — they need ATP to pump K⁺ ions and open the pore.'},
-  stom_pore: {name:'Stoma (pore)',col:'#2a5a10',fn:'The dark oval slit between guard cells. Opens in light (CO₂ in, O₂ out, water vapour out). Closes in dark or drought.',ncert:'Class 11, Ch.11',fact:'A single corn leaf has ~156 million stomata. Each opens and closes independently.'},
-  stom_epi:  {name:'Epidermal Cell',col:'#78b040',fn:'Larger surrounding cells with NO chloroplasts. Transparent — allows light to pass through to mesophyll below.',ncert:'Class 11, Ch.11',fact:'Epidermal cells secrete cuticle (waxy layer) to prevent water loss. Desert plants have very thick cuticle.'},
-  // AMOEBA
-  amoe_body: {name:'Cell Body',col:'#c8d8d8',fn:'Transparent irregular shape. Cytoplasm has two regions: outer ectoplasm (clear, firm) and inner endoplasm (granular, fluid). Streams continuously.',ncert:'Class 8, Ch.2',fact:'Amoeba changes shape every few seconds — it has no fixed form at all.'},
-  amoe_pseudo:{name:'Pseudopodium',col:'#aacccc',fn:'Greek: pseudo = false, podium = foot. Cytoplasm streams into an extension. Used for BOTH movement and catching food (phagocytosis).',ncert:'Class 8, Ch.2',fact:'When Amoeba catches food, it wraps pseudopodia around prey and forms a food vacuole — digestion inside!'},
-  amoe_nuc:  {name:'Nucleus',col:'#2255aa',fn:'Controls all cell activities. Slightly denser region — barely visible without staining. Amoeba reproduces by binary fission — nucleus divides first.',ncert:'Class 8, Ch.2',fact:'Amoeba dubia has the largest genome of any organism — 670 billion base pairs vs human\'s 3 billion!'},
-  amoe_food: {name:'Food Vacuole',col:'#22aa44',fn:'Green — contains captured algae or bacteria being digested. Enzymes are secreted into it. Gets smaller as food is digested.',ncert:'Class 8, Ch.2',fact:'The green colour comes from captured algae — Amoeba is in the middle of digesting its lunch!'},
-  amoe_cv:   {name:'Contractile Vacuole',col:'#ddeeff',fn:'Constantly inflates with water and deflates (contracts) — pumps excess water out. Freshwater Amoeba gains water by osmosis constantly.',ncert:'Class 8, Ch.2',fact:'You can watch the contractile vacuole pulse under a microscope — it inflates and deflates every 5–10 seconds.'},
-  // YEAST
-  yeast_mom: {name:'Mother Cell',col:'#d8e8f0',fn:'Oval thin-walled cell. Produces a bud from its surface. Can produce 20–30 buds in its lifetime — each leaves a scar.',ncert:'Class 11, Ch.2',fact:'Yeast has been making bread rise for 7,000 years — it produces CO₂ bubbles during fermentation that expand dough.'},
-  yeast_bud: {name:'Bud (daughter cell)',col:'#b8d0e8',fn:'Grows as outgrowth from mother. Receives copy of nucleus. When large enough, separates. This is asexual reproduction by budding.',ncert:'Class 11, Ch.2',fact:'Under ideal conditions yeast doubles every 90 minutes — one cell becomes 1 million in just 30 hours!'},
-  // BACTERIA
-  bact_rod:  {name:'Bacillus (rod)',col:'#3377cc',fn:'Rod-shaped bacterium. NO membrane-bound nucleus (prokaryote). 1–5 µm — 10 times smaller than an animal cell.',ncert:'Class 8, Ch.2; Class 11, Ch.2',fact:'One bacterium can become 2 billion in just 8 hours under ideal conditions — exponential growth.'},
-  bact_pair: {name:'Dividing pair',col:'#4488dd',fn:'Binary fission: cell elongates, DNA replicates, cell wall pinches in the middle, two identical daughters form. Fastest reproduction in nature.',ncert:'Class 8, Ch.2',fact:'Binary fission produces genetically identical daughters — bacteria only evolve through mutations!'},
-  // POLLEN
-  poll_ex:   {name:'Exine',col:'#ffcc22',fn:'Outer wall made of sporopollenin. Most resistant biological substance — not degraded by any known enzyme or acid.',ncert:'Class 12, Ch.2',fact:'Pollen exines are found intact in 10,000-year-old ice cores. Scientists identify Ice Age plants from fossil pollen!'},
-  poll_sp:   {name:'Spine',col:'#ee9900',fn:'Each species has unique spine pattern — like a fingerprint. Palynologists identify plants by their pollen.',ncert:'Class 12, Ch.2',fact:'Forensic scientists can track where a person has been from pollen on their clothes — each region has unique pollen.'},
-  poll_pore: {name:'Germination pore',col:'#cc7700',fn:'Pollen tube grows from here after landing on stigma. Travels down the style to reach the ovule — can grow several cm.',ncert:'Class 12, Ch.2',fact:'Pollen tubes race to reach the ovule first — it is a competition between pollen grains!'},
-  // FUNGI
-  fung_hyp:  {name:'Hypha (filament)',col:'#77bbaa',fn:'Thread-like tube forming the fungal body (mycelium). No cross-walls in Rhizopus (coenocytic = many nuclei in one tube).',ncert:'Class 10, Ch.8',fact:'The largest organism on Earth is a honey fungus mycelium in Oregon — 8.9 km² and over 8,000 years old!'},
-  fung_spor: {name:'Sporangium',col:'#111111',fn:'Black round spore case at tip of the sporangiophore stalk. When mature it bursts and releases thousands of spores into air.',ncert:'Class 10, Ch.8',fact:'One Rhizopus sporangium contains up to 50,000 spores — which is why bread mold spreads so fast!'},
-  fung_rhiz: {name:'Rhizoid',col:'#55aa88',fn:'Root-like anchors. Attach fungus to the bread/substrate. Secrete digestive enzymes outside the body — external digestion.',ncert:'Class 10, Ch.8',fact:'Rhizopus digests food OUTSIDE its body — it pours enzymes onto bread then absorbs the digested nutrients.'},
-};
-
-// ══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
 // THREE.JS SETUP
-// ══════════════════════════════════════════════════════════════════════
-const cvEl = document.getElementById('cv');
-const wrap = document.getElementById('canvas-wrap');
-// Use window dimensions directly - position:fixed not yet painted
-const _IW = window.innerWidth, _IH = window.innerHeight;
-const _CW = _IW - 265, _CH = _IH - 66;
-const renderer = new THREE.WebGLRenderer({canvas:cvEl,antialias:true,alpha:false});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setSize(_CW, _CH, false);
-renderer.setClearColor(0x0d1117,1);
+// ═══════════════════════════════════════════════════════════════════════════
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(W(), H());
+renderer.setClearColor(0x0a0c10, 1);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(38, _CW/_CH, 0.1, 100);
-camera.position.set(0,0,6);
+const camera = new THREE.PerspectiveCamera(42, W() / H(), 0.1, 100);
+camera.position.set(0, 0, 5.2);
 
-const amb = new THREE.AmbientLight(0x556677,1.4); scene.add(amb);
-const sun = new THREE.DirectionalLight(0xffffff,1.4); sun.position.set(5,6,5); scene.add(sun);
-const fill = new THREE.DirectionalLight(0x334488,0.5); fill.position.set(-4,-3,3); scene.add(fill);
-const topLight = new THREE.DirectionalLight(0xffffff,0.3); topLight.position.set(0,8,0); scene.add(topLight);
+// Lights
+const amb = new THREE.AmbientLight(0x334466, 1.0); scene.add(amb);
+const sun = new THREE.DirectionalLight(0xffffff, 1.3);
+sun.position.set(4, 6, 5); scene.add(sun);
+const fill = new THREE.DirectionalLight(0x4466aa, 0.4);
+fill.position.set(-4, -2, 3); scene.add(fill);
+const pt = new THREE.PointLight(0x14b8a6, 0.8, 18);
+pt.position.set(-3, 2, 3); scene.add(pt);
 
-function resize(){
-  const W = window.innerWidth - 265;
-  const H = window.innerHeight - 66;
-  if(W<10||H<10) return;
-  renderer.setSize(W,H,false);
-  camera.aspect=W/H;
-  camera.updateProjectionMatrix();
+// Starfield background
+(function() {
+  const geo = new THREE.BufferGeometry();
+  const pts = new Float32Array(300 * 3);
+  for (let i = 0; i < 300; i++) {
+    pts[i*3]   = (Math.random() - 0.5) * 40;
+    pts[i*3+1] = (Math.random() - 0.5) * 40;
+    pts[i*3+2] = (Math.random() - 0.5) * 40 - 10;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x445566, size: 0.06, transparent: true, opacity: 0.6 })));
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LABEL SPRITE HELPER
+// ═══════════════════════════════════════════════════════════════════════════
+function makeLabel(text, hexColor) {
+  const W = 200, H = 36;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  // Rounded rect background
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  const r = 7;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(W-r, 0);
+  ctx.quadraticCurveTo(W, 0, W, r);
+  ctx.lineTo(W, H-r);
+  ctx.quadraticCurveTo(W, H, W-r, H);
+  ctx.lineTo(r, H);
+  ctx.quadraticCurveTo(0, H, 0, H-r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+  // Accent left bar
+  if (hexColor) {
+    ctx.fillStyle = hexColor;
+    ctx.fillRect(0, 0, 3, H);
+  }
+  // Text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px -apple-system, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, W / 2, H / 2);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.needsUpdate = true;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, opacity: 0 });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(1.8, 0.32, 1);
+  sp.userData.isLabel = true;
+  return sp;
 }
-window.addEventListener('resize',resize);
 
-// ══════════════════════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════════════════════
-function M(geo,hex,op=1,sh=40,sid=''){
-  const mat=new THREE.MeshPhongMaterial({
-    color:hex,transparent:true,opacity:op,shininess:sh,
-    side:THREE.FrontSide,depthWrite:op>0.9
+// ═══════════════════════════════════════════════════════════════════════════
+// MESH HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+function mat(color, opts = {}) {
+  return new THREE.MeshPhongMaterial({
+    color,
+    transparent: true,
+    opacity: opts.opacity !== undefined ? opts.opacity : 1.0,
+    shininess: opts.shininess !== undefined ? opts.shininess : 60,
+    side: opts.side || THREE.FrontSide,
+    wireframe: opts.wire || false,
+    depthWrite: opts.opacity !== undefined && opts.opacity < 1.0 ? false : true
   });
-  const m=new THREE.Mesh(geo,mat);
-  if(sid){m.userData.sid=sid;}
-  m.userData.baseOp=op;
+}
+
+function mesh(geo, color, opts) {
+  const m = new THREE.Mesh(geo, mat(color, opts));
+  m.userData.baseOpacity = (opts && opts.opacity !== undefined) ? opts.opacity : 1.0;
   return m;
 }
-function add(parent,...meshes){meshes.forEach(m=>parent.add(m));return parent;}
 
-// SVG labels
-const svg=document.getElementById('lbl-svg');
-const NS='http://www.w3.org/2000/svg';
-let lblDefs=[];
+// ═══════════════════════════════════════════════════════════════════════════
+// CELL MODEL BUILDERS — each returns THREE.Group
+// ═══════════════════════════════════════════════════════════════════════════
 
-function clearLabels(){while(svg.firstChild)svg.removeChild(svg.firstChild);lblDefs=[];}
-
-function addLbl(offset3d,text,col,sid){
-  lblDefs.push({offset:new THREE.Vector3(...offset3d),text,col,sid});
-}
-
-function renderLabels(){
-  while(svg.firstChild)svg.removeChild(svg.firstChild);
-  if(!curGroup)return;
-  const W=wrap.clientWidth,H=wrap.clientHeight;
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  const CX=W/2,CY=H/2;
-
-  lblDefs.forEach(def=>{
-    const wp=def.offset.clone();
-    curGroup.localToWorld(wp);
-    const p=wp.clone().project(camera);
-    if(p.z>1)return;
-    const sx=(p.x*.5+.5)*W, sy=(-p.y*.5+.5)*H;
-    const dx=sx-CX,dy=sy-CY,len=Math.sqrt(dx*dx+dy*dy)||1;
-    const lx=sx+(dx/len)*52, ly=sy+(dy/len)*34;
-
-    // Dot
-    const d=document.createElementNS(NS,'circle');
-    d.setAttribute('cx',sx);d.setAttribute('cy',sy);
-    d.setAttribute('r',3.5);d.setAttribute('fill',def.col);
-    d.setAttribute('stroke','#0d1117');d.setAttribute('stroke-width',1.5);
-    svg.appendChild(d);
-
-    // Line
-    const l=document.createElementNS(NS,'line');
-    l.setAttribute('x1',sx);l.setAttribute('y1',sy);
-    l.setAttribute('x2',lx);l.setAttribute('y2',ly);
-    l.setAttribute('stroke',def.col);l.setAttribute('stroke-width',0.9);
-    l.setAttribute('opacity',0.65);
-    svg.appendChild(l);
-
-    // Text
-    const t=document.createElementNS(NS,'text');
-    t.setAttribute('x',lx+(lx>CX?4:-4));
-    t.setAttribute('y',ly+1);
-    t.setAttribute('text-anchor',lx>CX?'start':'end');
-    t.setAttribute('font-size',10);
-    t.setAttribute('font-family','-apple-system,system-ui,sans-serif');
-    t.setAttribute('font-weight','700');
-    t.setAttribute('fill',def.col);
-    t.setAttribute('dominant-baseline','middle');
-    t.setAttribute('class','lbl-txt');
-    t.textContent=def.text;
-    t.addEventListener('click',()=>openLesson(def.sid));
-    svg.appendChild(t);
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// CELL BUILDERS — colors match actual microscope images
-// ══════════════════════════════════════════════════════════════════════
-
-function buildOnionCell(){
-  // ONION ROOT TIP — acetocarmine stain — orange-brown cells, dark red nuclei
-  // Shows 6 cells including some in mitosis stages
-  const g=new THREE.Group();
-  const BG=0xd4895a; // warm orange-brown cell body
-  const NUC=0x8b2500; // dark red nucleus
-  const CHROM=0xc0180f; // bright red chromosomes
-  const WALL=0xc07840; // slightly darker wall edges
-
-  // Cell positions: 2 columns x 3 rows
-  const cells=[
-    {x:-0.6,y:-0.75,stage:'interphase'},
-    {x: 0.6,y:-0.75,stage:'interphase'},
-    {x:-0.6,y: 0,   stage:'prophase'},
-    {x: 0.6,y: 0,   stage:'metaphase'},
-    {x:-0.6,y: 0.75,stage:'interphase'},
-    {x: 0.6,y: 0.75,stage:'anaphase'},
-  ];
-
-  cells.forEach(({x,y,stage})=>{
-    // Cell body
-    const cell=M(new THREE.BoxGeometry(1.1,0.68,0.22),BG,0.85,20,'onion_wall');
-    cell.position.set(x,y,0);
+function buildOnionCell() {
+  const g = new THREE.Group();
+  const accent = META.ONION_CELL.accent;
+  // 6 rectangular cells in 2 columns × 3 rows — like peeled onion epidermis
+  const positions = [[-0.55,-0.75,0],[0.55,-0.75,0],[-0.55,0,0],[0.55,0,0],[-0.55,0.75,0],[0.55,0.75,0]];
+  positions.forEach(([x, y, z], i) => {
+    // Cell body (slightly rounded box feel via scale)
+    const cell = mesh(new THREE.BoxGeometry(1.0, 0.68, 0.1), 0xffe090, { opacity: 0.72 });
+    cell.position.set(x, y, z);
     g.add(cell);
-    // Wall edge lines
-    const edge=new THREE.EdgesGeometry(new THREE.BoxGeometry(1.12,0.70,0.24));
-    const el=new THREE.LineSegments(edge,new THREE.LineBasicMaterial({color:WALL,opacity:0.7,transparent:true}));
-    el.position.set(x,y,0); g.add(el);
+    // Cell wall edge (wireframe overlay)
+    const wall = mesh(new THREE.BoxGeometry(1.02, 0.70, 0.12), 0xcc8820, { wire: true, opacity: 0.6 });
+    wall.position.set(x, y, z);
+    g.add(wall);
+  });
+  // Central vacuole in middle cell (index 2 = top-left of middle row → use centre)
+  const vac = mesh(new THREE.SphereGeometry(0.32, 14, 10), 0xaad8f0, { opacity: 0.38, shininess: 90 });
+  vac.position.set(-0.55, 0, 0.02);
+  g.add(vac);
+  // Nucleus in same cell — pushed to edge
+  const nuc = mesh(new THREE.SphereGeometry(0.10, 10, 8), 0x775522, { opacity: 0.95 });
+  nuc.position.set(-0.18, -0.18, 0.06);
+  g.add(nuc);
+  // Labels
+  const lbVac = makeLabel('Large Central Vacuole', accent); lbVac.position.set(-0.55, 0.4, 0.2); g.add(lbVac);
+  const lbNuc = makeLabel('Nucleus', accent); lbNuc.position.set(0.28, -0.18, 0.2); g.add(lbNuc);
+  const lbWall = makeLabel('Cell Wall (cellulose)', accent); lbWall.position.set(1.3, 0.75, 0); g.add(lbWall);
+  return g;
+}
 
-    if(stage==='interphase'){
-      // Large oval nucleus
-      const nuc=M(new THREE.SphereGeometry(0.18,12,10),NUC,0.92,30,'onion_nuc');
-      nuc.scale.set(1.2,1,0.7); nuc.position.set(x+0.05,y+0.03,0.08); g.add(nuc);
-      // Nucleolus
-      const nlo=M(new THREE.SphereGeometry(0.06,8,6),0x6a1800,0.9);
-      nlo.position.set(x+0.08,y+0.06,0.12); g.add(nlo);
-    } else if(stage==='prophase'){
-      // Condensing chromosomes — tangled mass
-      for(let i=0;i<5;i++){
-        const cx2=M(new THREE.TorusGeometry(0.07,0.018,6,10),CHROM,0.88,20,'onion_chrom');
-        cx2.position.set(x+(i*.04-.08),y+(i*.03-.06),0.08);
-        cx2.rotation.z=i*0.6; g.add(cx2);
-      }
-    } else if(stage==='metaphase'){
-      // Chromosomes aligned at cell plate — visible as line
-      for(let i=0;i<4;i++){
-        const chm=M(new THREE.BoxGeometry(0.04,0.15,0.04),CHROM,0.9,20,'onion_chrom');
-        chm.position.set(x+(i*.1-.15),y,0.1); g.add(chm);
-      }
-    } else if(stage==='anaphase'){
-      // Chromosomes pulling to poles
-      for(let i=0;i<3;i++){
-        const ca1=M(new THREE.BoxGeometry(0.04,0.12,0.04),CHROM,0.88,20,'onion_chrom');
-        ca1.position.set(x+(i*.08-.08),y+0.22,0.08); g.add(ca1);
-        const ca2=M(new THREE.BoxGeometry(0.04,0.12,0.04),CHROM,0.88,20,'onion_chrom');
-        ca2.position.set(x+(i*.08-.08),y-0.22,0.08); g.add(ca2);
-      }
+function buildCheekCell() {
+  const g = new THREE.Group();
+  const accent = META.CHEEK_CELL.accent;
+  // 2 overlapping flat irregular cells (squashed spheres)
+  const c1 = mesh(new THREE.SphereGeometry(1.05, 16, 12), 0xc8e8ff, { opacity: 0.72 });
+  c1.scale.set(1.4, 0.75, 0.28); c1.position.set(0.1, 0.05, 0);
+  g.add(c1);
+  const c2 = mesh(new THREE.SphereGeometry(0.9, 14, 10), 0xb0d8f5, { opacity: 0.65 });
+  c2.scale.set(1.3, 0.7, 0.24); c2.position.set(-0.8, 0.4, -0.05);
+  g.add(c2);
+  // Nucleus — dark blue, oval, central in main cell
+  const nuc = mesh(new THREE.SphereGeometry(0.28, 14, 10), 0x1144dd, { opacity: 0.92 });
+  nuc.scale.set(1.3, 1.0, 0.7); nuc.position.set(0.1, 0.05, 0.06);
+  g.add(nuc);
+  // Nuclear membrane outline
+  const nm = mesh(new THREE.SphereGeometry(0.30, 14, 10), 0x2255ee, { wire: true, opacity: 0.4 });
+  nm.scale.set(1.3, 1.0, 0.7); nm.position.set(0.1, 0.05, 0.06);
+  g.add(nm);
+  // Cell membrane outline
+  const cm = mesh(new THREE.SphereGeometry(1.07, 16, 12), 0x5588bb, { wire: true, opacity: 0.25 });
+  cm.scale.set(1.4, 0.75, 0.28); cm.position.set(0.1, 0.05, 0);
+  g.add(cm);
+  // Labels
+  const lbNuc = makeLabel('Nucleus (DNA)', accent); lbNuc.position.set(0.8, 0.4, 0.3); g.add(lbNuc);
+  const lbMem = makeLabel('Cell Membrane', accent); lbMem.position.set(-1.0, -0.6, 0.2); g.add(lbMem);
+  const lbCyt = makeLabel('Cytoplasm', accent); lbCyt.position.set(0.6, -0.5, 0.3); g.add(lbCyt);
+  return g;
+}
+
+function buildBloodSmear() {
+  const g = new THREE.Group();
+  const accent = META.BLOOD_SMEAR.accent;
+  // Biconcave RBC — modify sphere vertices to create concavity
+  function makeBiconcave(radius) {
+    const geo = new THREE.SphereGeometry(radius, 16, 12);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      const r = Math.sqrt(x * x + z * z); // radial distance from Y axis
+      // Flatten in Y and create central concavity
+      const newY = y * 0.22 - (r < radius * 0.6 ? Math.sign(y) * 0.07 : 0);
+      pos.setY(i, newY);
     }
-    // Cytoplasm fill
-    const cyt=M(new THREE.BoxGeometry(1.08,0.66,0.18),0xe8b090,0.2,'','onion_cyt');
-    cyt.position.set(x,y,0); g.add(cyt);
-  });
-
-  addLbl([0.6,0.75,0.3],'Cell Wall','#d4895a','onion_wall');
-  addLbl([-1.1,0,0],'Nucleus','#8b2500','onion_nuc');
-  addLbl([0.6,0,0.3],'Chromosomes\n(mitosis)','#c0180f','onion_chrom');
-  addLbl([-1.2,-0.75,0],'Cytoplasm','#e8b090','onion_cyt');
-  return g;
-}
-
-function buildCheekCell(){
-  const g=new THREE.Group();
-  // Two overlapping flat irregular cells — methylene blue pale
-  const body=M(new THREE.SphereGeometry(1.08,16,12),0xb8d4ee,0.72,20,'cheek_mem');
-  body.scale.set(1.38,0.72,0.28); body.position.set(0.1,0.04,0); g.add(body);
-  const body2=M(new THREE.SphereGeometry(0.88,14,10),0xc0dcf4,0.62,20,'cheek_mem');
-  body2.scale.set(1.32,0.68,0.26); body2.position.set(-0.82,0.36,-0.05); g.add(body2);
-  // Cell membrane outline (slightly larger wireframe)
-  const outline=new THREE.Mesh(new THREE.SphereGeometry(1.1,16,12),new THREE.MeshPhongMaterial({color:0x6688aa,wireframe:true,transparent:true,opacity:0.18}));
-  outline.scale.set(1.38,0.72,0.28); outline.position.set(0.1,0.04,0); g.add(outline);
-  // Nucleus — dark blue oval, central
-  const nuc=M(new THREE.SphereGeometry(0.29,12,10),0x1a3aaa,0.92,60,'cheek_nuc');
-  nuc.scale.set(1.25,0.95,0.72); nuc.position.set(0.1,0.04,0.07); g.add(nuc);
-  // Nuclear membrane subtle
-  const nm=M(new THREE.SphereGeometry(0.31,12,10),0x2244cc,0.18,20,'cheek_nuc');
-  nm.scale.set(1.25,0.95,0.72); nm.position.set(0.1,0.04,0.07); g.add(nm);
-  // Cytoplasm
-  const cyt=M(new THREE.SphereGeometry(0.8,10,8),0xc8dff0,0.12,'','cheek_cyt');
-  cyt.scale.set(1.38,0.72,0.28); cyt.position.set(0.1,0.04,0); g.add(cyt);
-
-  addLbl([1.3,-0.4,0],'Cell Membrane','#b8d4ee','cheek_mem');
-  addLbl([0.8,0.5,0.1],'Nucleus','#4466cc','cheek_nuc');
-  addLbl([-1.2,-0.5,0],'Cytoplasm','#90b8d8','cheek_cyt');
-  return g;
-}
-
-function buildBloodSmear(){
-  // Match images 5 & 6 — pale pink RBCs with pale centre, purple lobed WBC
-  const g=new THREE.Group();
-
-  function makeRBC(){
-    const geo=new THREE.SphereGeometry(0.5,16,12);
-    const pos=geo.attributes.position;
-    for(let i=0;i<pos.count;i++){
-      const x=pos.getX(i),z=pos.getZ(i);
-      const r=Math.sqrt(x*x+z*z);
-      const y=pos.getY(i);
-      // Flatten and create biconcave depression
-      const ny = y*0.18 - (r < 0.28 ? Math.sign(y)*0.08 : 0);
-      pos.setY(i,ny);
-    }
-    pos.needsUpdate=true; geo.computeVertexNormals(); return geo;
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+    return geo;
   }
-
-  // 6 RBCs — pale pink with lighter centre (biconcave = pale centre visible)
-  const rbcPos=[[0,0,0],[1.18,0.22,0.03],[-1.0,-0.28,0.02],[0.28,0.98,-0.02],[-0.42,0.82,0.03],[1.1,-0.85,0.02]];
-  rbcPos.forEach(([x,y,z])=>{
-    const rbc=M(makeRBC(),0xf0c0b8,0.92,60,'blood_rbc');
-    rbc.position.set(x,y,z); rbc.rotation.z=(Math.random()-.5)*.7;
-    rbc.userData.rbc=true; g.add(rbc);
-    // Pale centre circle — simulates biconcave light patch
-    const pale=M(new THREE.SphereGeometry(0.22,10,8),0xf8e0dc,0.5,20);
-    pale.scale.set(1,0.3,1); pale.position.set(x,y,z+0.01); g.add(pale);
+  // 5 RBCs at different positions
+  const rbcPos = [[0,0,0],[1.15,0.25,0.05],[-1.0,-0.3,0.03],[0.3,1.0,-0.02],[-0.5,0.85,0.04]];
+  rbcPos.forEach(([x,y,z]) => {
+    const rbc = mesh(makeBiconcave(0.52), 0xff6644, { opacity: 0.92, shininess: 80 });
+    rbc.position.set(x, y, z);
+    rbc.rotation.z = (Math.random() - 0.5) * 0.8;
+    g.add(rbc);
   });
-
-  // WBC — larger, pale cytoplasm with multi-lobed purple nucleus (neutrophil)
-  const wbcCyt=M(new THREE.SphereGeometry(0.66,14,12),0xe8d0e0,0.82,20,'blood_cyt');
-  wbcCyt.position.set(-0.14,0.1,0.12); g.add(wbcCyt);
-  // Multi-lobed nucleus — 3 connected spheres (neutrophil)
-  const lobeDefs=[[-0.24,0.06,0.13],[0.0,0.18,0.13],[0.18,0.02,0.13]];
-  lobeDefs.forEach(([lx,ly,lz])=>{
-    const lobe=M(new THREE.SphereGeometry(0.19,10,8),0x7733bb,0.92,40,'blood_wbc');
-    lobe.position.set(lx,ly,lz); g.add(lobe);
+  // 1 WBC — larger, with visible nucleus
+  const wbc = mesh(new THREE.SphereGeometry(0.68, 14, 12), 0xddbbee, { opacity: 0.88 });
+  wbc.position.set(-0.15, 0.1, 0.12);
+  g.add(wbc);
+  // WBC nucleus — lobed (two overlapping spheres)
+  const wn1 = mesh(new THREE.SphereGeometry(0.28, 10, 8), 0x7733bb, { opacity: 0.9 });
+  wn1.position.set(-0.22, 0.08, 0.12);
+  g.add(wn1);
+  const wn2 = mesh(new THREE.SphereGeometry(0.22, 10, 8), 0x7733bb, { opacity: 0.9 });
+  wn2.position.set(0.08, 0.18, 0.12);
+  g.add(wn2);
+  // 3 platelets — tiny irregular fragments
+  [[0.7,-0.7,0.08],[1.4,-0.4,0.06],[-1.2,0.6,0.05]].forEach(([x,y,z]) => {
+    const plt = mesh(new THREE.SphereGeometry(0.12, 8, 6), 0xffaaaa, { opacity: 0.8 });
+    plt.scale.set(1.4, 0.8, 0.5);
+    plt.position.set(x, y, z);
+    g.add(plt);
   });
-
-  // Platelets — tiny pink fragments
-  [[0.78,-0.72,0.06],[1.48,-0.36,0.05],[-1.18,0.52,0.04]].forEach(([x,y,z])=>{
-    const plt=M(new THREE.SphereGeometry(0.1,7,5),0xf8d0d0,0.82,'','blood_plt');
-    plt.scale.set(1.5,0.7,0.5); plt.position.set(x,y,z); g.add(plt);
-  });
-
-  addLbl([1.5,-0.9,0.1],'RBC (pale centre\n= biconcave)','#f0c0b8','blood_rbc');
-  addLbl([-1.4,0.7,0.2],'WBC nucleus\n(multi-lobed)','#9955cc','blood_wbc');
-  addLbl([-0.6,-0.5,0.2],'WBC cytoplasm','#e0c8d8','blood_cyt');
-  addLbl([1.1,-1.3,0.1],'Platelet','#f8d0d0','blood_plt');
+  // Labels
+  const lbRBC = makeLabel('RBC — biconcave, no nucleus', accent); lbRBC.position.set(1.4, -0.8, 0.3); g.add(lbRBC);
+  const lbWBC = makeLabel('WBC (has nucleus)', '#aa88ff'); lbWBC.position.set(-1.3, 0.6, 0.3); g.add(lbWBC);
+  const lbPlt = makeLabel('Platelet (tiny fragment)', '#ff8888'); lbPlt.position.set(1.0, -1.2, 0.2); g.add(lbPlt);
   return g;
 }
 
-function buildStomata(){
-  // Match images 1&2 — GREEN (chlorophyll, no stain), dense kidney pairs, dark oval pores
-  const g=new THREE.Group();
-  const GC_COL=0x5a8a2a; // guard cell green (chlorophyll)
-  const EPI=0x78b040;    // epidermal cell green (lighter)
-  const PORE=0x1a2a10;   // dark pore
-
-  function guardPair(x,y,open=true){
-    const pair=new THREE.Group();
-    const sep=open?0.36:0.26;
-    // Left guard cell
-    const gcL=M(new THREE.SphereGeometry(0.58,14,10),GC_COL,0.92,35,'stom_guard');
-    gcL.scale.set(0.52,1.35,0.4); gcL.position.set(-sep,0,0); gcL.rotation.z=0.48; pair.add(gcL);
-    // Right guard cell
-    const gcR=M(new THREE.SphereGeometry(0.58,14,10),GC_COL,0.92,35,'stom_guard');
-    gcR.scale.set(0.52,1.35,0.4); gcR.position.set(sep,0,0); gcR.rotation.z=-0.48; pair.add(gcR);
-    // Pore — dark oval between them
-    const pore=M(new THREE.SphereGeometry(open?0.14:0.07,8,6),PORE,0.96,'','stom_pore');
-    pore.scale.set(open?0.6:0.4,1.2,0.28); pore.position.set(0,0,0.12); pair.add(pore);
-    // Chloroplasts inside guard cells — small bright green dots
-    [[-sep-.06,0.22,0.14],[-sep+.06,-0.22,0.14],[sep+.06,0.22,0.14],[sep-.06,-0.22,0.14]].forEach(([cx,cy,cz])=>{
-      const cp=M(new THREE.SphereGeometry(0.07,7,5),0x22aa44,0.95,'','stom_guard');
-      cp.position.set(cx,cy,cz); pair.add(cp);
-    });
-    pair.position.set(x,y,0);
-    return pair;
-  }
-
-  // 6 stomata pairs in a grid pattern — like the dense real image
-  const grid=[[-0.85,-0.72],[0.85,-0.72],[-0.85,0.0],[0.85,0.0],[-0.85,0.72],[0.85,0.72]];
-  const mainPair=guardPair(0,0,true);
-  g.add(mainPair);
-  g.userData.mainPair=mainPair;
-  g.userData.stomataOpen=true;
-
-  // Background epidermal cells (faint)
-  grid.forEach(([x,y])=>{
-    const ep=M(new THREE.SphereGeometry(0.52,10,8),EPI,0.32,15,'stom_epi');
-    ep.scale.set(1.4,0.85,0.3); ep.position.set(x,y,-0.05); g.add(ep);
-    // Small stomata pairs on background cells (decorative)
-    const bp=guardPair(x,y,true);
-    bp.scale.setScalar(0.6); g.add(bp);
+function buildStomata() {
+  const g = new THREE.Group();
+  const accent = META.STOMATA.accent;
+  // 2 kidney-shaped guard cells — made from squashed + rotated spheres
+  const gcLeft = mesh(new THREE.SphereGeometry(0.55, 14, 10), 0xff8844, { opacity: 0.92 });
+  gcLeft.scale.set(0.55, 1.3, 0.38);
+  gcLeft.position.set(-0.38, 0, 0);
+  gcLeft.rotation.z = 0.45;
+  g.add(gcLeft);
+  const gcRight = mesh(new THREE.SphereGeometry(0.55, 14, 10), 0xff8844, { opacity: 0.92 });
+  gcRight.scale.set(0.55, 1.3, 0.38);
+  gcRight.position.set(0.38, 0, 0);
+  gcRight.rotation.z = -0.45;
+  g.add(gcRight);
+  // Pore — dark oval between guard cells
+  const pore = mesh(new THREE.SphereGeometry(0.15, 10, 8), 0x0a0a14, { opacity: 0.9 });
+  pore.scale.set(0.6, 1.2, 0.3);
+  pore.position.set(0, 0, 0.08);
+  g.add(pore);
+  // Chloroplasts on guard cells — small green spheres
+  [[-0.52,0.3,0.14],[-0.42,-0.3,0.14],[-0.3,0.0,0.15],[0.52,0.3,0.14],[0.42,-0.3,0.14],[0.3,0.0,0.15]].forEach(([x,y,z]) => {
+    const cp = mesh(new THREE.SphereGeometry(0.09, 8, 6), 0x22aa44, { opacity: 0.95 });
+    cp.position.set(x, y, z);
+    g.add(cp);
   });
-
-  addLbl([-0.95,0.85,0.2],'Guard Cell\n(+ chloroplasts)','#5a8a2a','stom_guard');
-  addLbl([0,-0.85,0.15],'Stoma (pore)','#447722','stom_pore');
-  addLbl([1.4,-0.72,0],'Epidermal cell\n(no chloroplasts)','#78b040','stom_epi');
+  // Surrounding epidermal cells (faint)
+  [[-1.3,0,0],[1.3,0,0],[0,1.2,0],[0,-1.2,0]].forEach(([x,y,z]) => {
+    const ec = mesh(new THREE.SphereGeometry(0.5, 10, 8), 0xddcc88, { opacity: 0.18 });
+    ec.scale.set(1.4, 0.9, 0.3);
+    ec.position.set(x, y, z);
+    g.add(ec);
+  });
+  // Labels
+  const lbGC = makeLabel('Guard Cell', accent); lbGC.position.set(-1.4, 0.6, 0.3); g.add(lbGC);
+  const lbPore = makeLabel('Stoma (pore)', '#888888'); lbPore.position.set(0, -0.8, 0.3); g.add(lbPore);
+  const lbCP = makeLabel('Chloroplast', '#22cc55'); lbCP.position.set(1.2, 0.7, 0.3); g.add(lbCP);
   return g;
 }
 
-function buildAmoeba(){
-  // Match image 11 — translucent irregular blob, visible pseudopodia, green food vacuole
-  const g=new THREE.Group();
-
-  // Body — translucent, very irregular
-  const body=M(new THREE.SphereGeometry(1.0,16,12),0xc8d8d8,0.45,15,'amoe_body');
-  body.scale.set(1.28,0.9,0.48); g.add(body);
+function buildAmoeba() {
+  const g = new THREE.Group();
+  const accent = META.AMOEBA.accent;
+  // Irregular body — squashed sphere with slight distortion
+  const body = mesh(new THREE.SphereGeometry(1.0, 16, 12), 0x88bbcc, { opacity: 0.52, shininess: 40 });
+  body.scale.set(1.25, 0.88, 0.5);
+  g.add(body);
   // Body outline
-  const edge=new THREE.Mesh(new THREE.SphereGeometry(1.02,16,12),new THREE.MeshPhongMaterial({color:0x7799aa,wireframe:true,transparent:true,opacity:0.14}));
-  edge.scale.set(1.28,0.9,0.48); g.add(edge);
-
-  // Pseudopodia — 4, thick, clearly visible
-  const pdefs=[
-    {pos:[1.38,0.12,0],  rz:-Math.PI/2,  len:0.72},
-    {pos:[0.62,1.02,0],  rz:-Math.PI/3.5,len:0.62},
-    {pos:[-1.12,0.42,0], rz:Math.PI*.58, len:0.68},
-    {pos:[-0.3,-1.0,0],  rz:Math.PI*.1,  len:0.55},
+  const bodyOut = mesh(new THREE.SphereGeometry(1.02, 16, 12), 0x5599bb, { wire: true, opacity: 0.25 });
+  bodyOut.scale.set(1.25, 0.88, 0.5);
+  g.add(bodyOut);
+  // Pseudopodia — 3 finger-like extensions (tapered cylinders)
+  const pseudoDefs = [
+    { pos: [1.35, 0.1, 0], rot: [0, 0, -Math.PI/2], len: 0.7 },
+    { pos: [0.6, 0.95, 0], rot: [0, 0, -Math.PI/4], len: 0.6 },
+    { pos: [-1.1, 0.4, 0], rot: [0, 0, Math.PI * 0.55], len: 0.65 },
   ];
-  const pseudos=[];
-  pdefs.forEach(({pos,rz,len},i)=>{
-    const ps=M(new THREE.CylinderGeometry(0.12,0.24,len,8),0xc8d8d8,0.52,10,'amoe_pseudo');
-    ps.position.set(...pos); ps.rotation.z=rz;
-    ps.userData.psBase=len; pseudos.push(ps); g.add(ps);
+  pseudoDefs.forEach(({ pos, rot, len }) => {
+    const ps = mesh(new THREE.CylinderGeometry(0.08, 0.22, len, 8), 0x88bbcc, { opacity: 0.60 });
+    ps.position.set(...pos);
+    ps.rotation.set(...rot);
+    g.add(ps);
   });
-  g.userData.pseudos=pseudos;
-
-  // Nucleus — slightly denser region
-  const nuc=M(new THREE.SphereGeometry(0.26,12,10),0x7799aa,0.72,30,'amoe_nuc');
-  nuc.position.set(0.12,0.08,0.1); g.add(nuc);
-
-  // FOOD VACUOLE — bright green (captured algae) — matches image 11
-  const fv=M(new THREE.SphereGeometry(0.18,10,8),0x22aa44,0.88,40,'amoe_food');
-  fv.scale.set(1.4,0.9,0.7); fv.position.set(0.42,-0.32,0.1); g.add(fv);
-
-  // Contractile vacuole — clear/white circle
-  const cv=M(new THREE.SphereGeometry(0.13,10,8),0xddeeff,0.65,80,'amoe_cv');
-  cv.position.set(-0.52,-0.2,0.1); cv.userData.cv=true; g.add(cv);
-  // CV outline ring
-  const cvr=new THREE.Mesh(new THREE.TorusGeometry(0.13,0.014,6,14),new THREE.MeshPhongMaterial({color:0x88aacc,transparent:true,opacity:0.7}));
-  cvr.position.set(-0.52,-0.2,0.1); g.add(cvr);
-
-  addLbl([1.55,0.6,0.1],'Pseudopodium','#aacccc','amoe_pseudo');
-  addLbl([0.7,0.6,0.1],'Nucleus','#7799aa','amoe_nuc');
-  addLbl([1.0,-0.8,0.1],'Food vacuole\n(green algae)','#22aa44','amoe_food');
-  addLbl([-1.4,-0.5,0.1],'Contractile vacuole','#88aacc','amoe_cv');
-  addLbl([-1.4,0.3,0],'Cell body','#99bbcc','amoe_body');
+  // Nucleus
+  const nuc = mesh(new THREE.SphereGeometry(0.26, 12, 10), 0x2255aa, { opacity: 0.90 });
+  nuc.position.set(0.1, 0.05, 0.1);
+  g.add(nuc);
+  const nucOut = mesh(new THREE.SphereGeometry(0.28, 12, 10), 0x3366bb, { wire: true, opacity: 0.40 });
+  nucOut.position.set(0.1, 0.05, 0.1);
+  g.add(nucOut);
+  // Contractile vacuole — pulsing (animated via userData)
+  const cv = mesh(new THREE.SphereGeometry(0.13, 10, 8), 0xaaddff, { opacity: 0.55, shininess: 100 });
+  cv.position.set(-0.5, -0.25, 0.1);
+  cv.userData.contractile = true;
+  g.add(cv);
+  // Food vacuole
+  const fv = mesh(new THREE.SphereGeometry(0.10, 8, 6), 0x558844, { opacity: 0.65 });
+  fv.position.set(0.35, -0.3, 0.1);
+  g.add(fv);
+  // Labels
+  const lbPseudo = makeLabel('Pseudopodium', accent); lbPseudo.position.set(1.6, 0.6, 0.3); g.add(lbPseudo);
+  const lbNuc = makeLabel('Nucleus', '#4488cc'); lbNuc.position.set(0.7, 0.5, 0.3); g.add(lbNuc);
+  const lbCV = makeLabel('Contractile Vacuole', '#88ccff'); lbCV.position.set(-1.4, -0.6, 0.3); g.add(lbCV);
   return g;
 }
 
-function buildYeast(){
-  // Match images 9&10 — small pale ovals on hemocytometer grid, thin outline, pairs/chains
-  const g=new THREE.Group();
-
-  // Hemocytometer grid lines (faint background)
-  const gridMat=new THREE.LineBasicMaterial({color:0x4488bb,opacity:0.35,transparent:true});
-  for(let i=-3;i<=3;i++){
-    const hG=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.8,i*.9,-.15),new THREE.Vector3(2.8,i*.9,-.15)]);
-    g.add(new THREE.Line(hG,gridMat));
-    const vG=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i*.9,-2.5,-.15),new THREE.Vector3(i*.9,2.5,-.15)]);
-    g.add(new THREE.Line(vG,gridMat));
-  }
-
-  // Yeast cells — pale oval, thin outline, scattered + pairs
-  const cellDefs=[
-    {x:0,   y:0,   bud:true,  budDir:[0.38,0.1]},
-    {x:0.9, y:0.6, bud:true,  budDir:[0.36,-0.1]},
-    {x:-0.8,y:0.5, bud:false, budDir:null},
-    {x:0.5, y:-0.7,bud:true,  budDir:[-0.1,0.38]},
-    {x:-0.5,y:-0.6,bud:false, budDir:null},
-    {x:-1.4,y:-0.2,bud:true,  budDir:[0.36,0.1]},
-    {x:1.4, y:-0.3,bud:false, budDir:null},
-    {x:0.2, y:1.3, bud:true,  budDir:[0.12,0.36]},
-    {x:-0.2,y:-1.4,bud:false, budDir:null},
-  ];
-
-  cellDefs.forEach(({x,y,bud,budDir})=>{
-    // Mother cell — pale oval, thin purple outline
-    const mother=M(new THREE.SphereGeometry(0.28,12,10),0xd8e8f0,0.78,20,'yeast_mom');
-    mother.scale.set(1.0,1.25,0.55); mother.position.set(x,y,0);
-    g.add(mother);
-    // Outline ring
-    const out=new THREE.Mesh(new THREE.SphereGeometry(0.30,12,10),new THREE.MeshPhongMaterial({color:0x5588aa,wireframe:true,transparent:true,opacity:0.55}));
-    out.scale.set(1.0,1.25,0.55); out.position.set(x,y,0); g.add(out);
-
-    if(bud&&budDir){
-      const [bx,by]=budDir;
-      const budM=M(new THREE.SphereGeometry(0.18,10,8),0xb8d0e8,0.75,20,'yeast_bud');
-      budM.scale.set(0.9,1.1,0.5); budM.position.set(x+bx,y+by,0);
-      budM.userData.bud=true; g.add(budM);
-      // Bud outline
-      const bo=new THREE.Mesh(new THREE.SphereGeometry(0.19,10,8),new THREE.MeshPhongMaterial({color:0x4477aa,wireframe:true,transparent:true,opacity:0.5}));
-      bo.scale.set(0.9,1.1,0.5); bo.position.set(x+bx,y+by,0); g.add(bo);
-    }
-  });
-  // Store first bud for animation
-  g.userData.budMesh=g.children.find(c=>c.userData&&c.userData.bud);
-
-  addLbl([-0.7,0.9,0.2],'Mother cell','#d8e8f0','yeast_mom');
-  addLbl([1.4,0.8,0.2],'Bud (daughter)','#b8d0e8','yeast_bud');
+function buildYeast() {
+  const g = new THREE.Group();
+  const accent = META.YEAST.accent;
+  // Mother cell
+  const mother = mesh(new THREE.SphereGeometry(0.72, 16, 12), 0xffe080, { opacity: 0.94 });
+  g.add(mother);
+  // Large bud (daughter cell forming, still attached)
+  const bud = mesh(new THREE.SphereGeometry(0.46, 14, 10), 0xffd040, { opacity: 0.92 });
+  bud.position.set(0.9, 0.36, 0);
+  g.add(bud);
+  // Small forming bud (early stage)
+  const bud2 = mesh(new THREE.SphereGeometry(0.22, 10, 8), 0xffc820, { opacity: 0.88 });
+  bud2.position.set(-0.58, -0.64, 0);
+  g.add(bud2);
+  // Bud scar — thin torus at junction of mother and large bud
+  const scar = mesh(new THREE.TorusGeometry(0.16, 0.024, 8, 20), 0xcc9900, { opacity: 0.75 });
+  scar.position.set(0.56, 0.22, 0);
+  scar.rotation.y = Math.PI / 2;
+  g.add(scar);
+  // Vacuole inside mother
+  const vac = mesh(new THREE.SphereGeometry(0.28, 10, 8), 0xfffae0, { opacity: 0.30, shininess: 100 });
+  g.add(vac);
+  // Nucleus in mother
+  const nuc = mesh(new THREE.SphereGeometry(0.18, 10, 8), 0xdd8800, { opacity: 0.80 });
+  nuc.position.set(-0.18, 0.18, 0.22);
+  g.add(nuc);
+  // Labels
+  const lbM = makeLabel('Mother cell', accent); lbM.position.set(-1.2, 0.7, 0.3); g.add(lbM);
+  const lbB = makeLabel('Bud (daughter cell)', '#ffd040'); lbB.position.set(1.5, 0.8, 0.3); g.add(lbB);
+  const lbS = makeLabel('Bud scar', '#cc9900'); lbS.position.set(0.3, -0.7, 0.3); g.add(lbS);
+  const lbB2 = makeLabel('New bud forming', '#ffc820'); lbB2.position.set(-1.3, -1.0, 0.3); g.add(lbB2);
   return g;
 }
 
-function buildBacteria(){
-  const g=new THREE.Group();
-  function rod(x,y,z,rz,sid){
-    const body=M(new THREE.CylinderGeometry(0.057,0.057,0.38,8),0x3377cc,0.92,40,sid);
-    body.position.set(x,y,z); body.rotation.z=rz; g.add(body);
-    [0.19,-0.19].forEach(dy=>{
-      const cap=M(new THREE.SphereGeometry(0.057,8,6),0x3377cc,0.92,40,sid);
-      cap.position.set(x-Math.sin(rz)*dy,y+Math.cos(rz)*dy,z); g.add(cap);
+function buildBacteria() {
+  const g = new THREE.Group();
+  const accent = META.BACTERIA.accent;
+  // Bacteria are much smaller — 12 rods scattered (bacillus form)
+  // Positions: some in pairs (binary fission), some solo
+  const defs = [
+    [0, 0, 0, 0],       [0.4, 0.08, 0, 0.2],   // pair 1 (dividing)
+    [-0.5, 0.5, 0, 0.8],[0.0, 0.55, 0, 1.0],    // pair 2
+    [-0.8,-0.3, 0,-0.3],[0.8, -0.5, 0, 0.5],    // solo
+    [0.3, -0.6, 0, 1.4],[-0.6,-0.7, 0,-0.6],   // solo
+    [0.9,  0.3, 0, 2.0],[-0.9, 0.4, 0, 1.5],   // solo
+    [0.2,  0.8, 0,-1.0],[-0.2,-0.9, 0, 0.7],   // solo
+  ];
+  defs.forEach(([x, y, z, rz]) => {
+    const rod = mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.38, 8), 0x4488cc, { opacity: 0.92 });
+    rod.position.set(x * 1.1, y * 1.1, z);
+    rod.rotation.z = rz;
+    // Hemispherical caps via sphere scaling
+    rod.scale.set(1, 1, 1);
+    g.add(rod);
+    // Caps
+    [0.19, -0.19].forEach(dy => {
+      const cap = mesh(new THREE.SphereGeometry(0.055, 8, 6), 0x4488cc, { opacity: 0.92 });
+      cap.position.set(x * 1.1, y * 1.1 + Math.cos(rz) * dy, z + Math.sin(rz) * dy * 0.8);
+      // Approximate cap position
+      cap.position.set(
+        x * 1.1 - Math.sin(rz) * dy,
+        y * 1.1 + Math.cos(rz) * dy,
+        z
+      );
+      g.add(cap);
     });
+  });
+  // Labels
+  const lbRod = makeLabel('Bacillus (rod shape)', accent); lbRod.position.set(1.4, 0.7, 0.3); g.add(lbRod);
+  const lbDiv = makeLabel('Binary fission pair', '#6699ff'); lbDiv.position.set(0.9, -0.3, 0.3); g.add(lbDiv);
+  const lbWall = makeLabel('No true nucleus', '#88aacc'); lbWall.position.set(-1.4, -0.7, 0.3); g.add(lbWall);
+  return g;
+}
+
+function buildPollen() {
+  const g = new THREE.Group();
+  const accent = META.POLLEN.accent;
+  // Main body — exine
+  const exine = mesh(new THREE.SphereGeometry(0.88, 20, 16), 0xffcc22, { opacity: 0.94, shininess: 50 });
+  g.add(exine);
+  // Inner intine layer (slightly smaller, lighter)
+  const intine = mesh(new THREE.SphereGeometry(0.82, 16, 12), 0xffe880, { opacity: 0.30 });
+  g.add(intine);
+  // Spines — 20 cylinders radiating from surface
+  const N = 20;
+  for (let i = 0; i < N; i++) {
+    const theta = (i / N) * Math.PI * 2;
+    const phi = Math.acos(2 * ((i * 0.618033) % 1) - 1); // golden angle distribution
+    const sx = Math.sin(phi) * Math.cos(theta);
+    const sy = Math.cos(phi);
+    const sz = Math.sin(phi) * Math.sin(theta);
+    const spine = mesh(new THREE.CylinderGeometry(0.018, 0.008, 0.24, 4), 0xee9900, { opacity: 0.90 });
+    const r = 0.88 + 0.12; // base + half length
+    spine.position.set(sx * r, sy * r, sz * r);
+    // Point away from centre
+    const dir = new THREE.Vector3(sx, sy, sz);
+    const up = new THREE.Vector3(0, 1, 0);
+    const quat = new THREE.Quaternion().setFromUnitVectors(up, dir);
+    spine.quaternion.copy(quat);
+    g.add(spine);
   }
-  const defs=[
-    [0,0,0,0,'bact_rod'],[0.42,0.09,0,0.22,'bact_rod'],
-    [-0.52,0.52,0,0.8,'bact_pair'],[0.02,0.58,0,1.02,'bact_pair'],
-    [-0.8,-0.32,0,-0.32,'bact_rod'],[0.82,-0.52,0,0.52,'bact_rod'],
-    [0.3,-0.62,0,1.42,'bact_rod'],[-0.62,-0.72,0,-0.62,'bact_rod'],
-    [0.92,0.28,0,2.02,'bact_rod'],[-0.9,0.42,0,1.52,'bact_rod'],
-    [0.2,0.82,0,-1.02,'bact_rod'],[-0.22,-0.92,0,0.72,'bact_rod'],
+  // 3 germination pores — darker patches + torus rings
+  [0, 2.094, 4.188].forEach((angle) => {
+    const px = Math.sin(angle) * 0.9;
+    const py = 0;
+    const pz = Math.cos(angle) * 0.9;
+    const pore = mesh(new THREE.TorusGeometry(0.10, 0.025, 6, 14), 0xcc7700, { opacity: 0.80 });
+    pore.position.set(px, py, pz);
+    pore.lookAt(0, 0, 0);
+    g.add(pore);
+    const poreIn = mesh(new THREE.CircleGeometry(0.08, 12), 0x885500, { opacity: 0.70 });
+    poreIn.position.set(px * 0.93, py, pz * 0.93);
+    poreIn.lookAt(0, 0, 0);
+    g.add(poreIn);
+  });
+  // Labels
+  const lbEx = makeLabel('Exine (sporopollenin)', accent); lbEx.position.set(-1.5, 0.8, 0.3); g.add(lbEx);
+  const lbSp = makeLabel('Spine', '#ee9900'); lbSp.position.set(1.4, 0.9, 0.3); g.add(lbSp);
+  const lbPore = makeLabel('Germination pore', '#cc7700'); lbPore.position.set(1.2, -0.7, 0.3); g.add(lbPore);
+  return g;
+}
+
+function buildFungiHyphae() {
+  const g = new THREE.Group();
+  const accent = META.FUNGI_HYPHAE.accent;
+  // 3 main hyphae at different angles
+  const hyphaDefs = [
+    { rot: [0, 0, 0],       pos: [0, 0, 0] },
+    { rot: [0, 0, 0.55],    pos: [0.3, 0.2, 0] },
+    { rot: [0, 0, -0.45],   pos: [-0.3, 0.15, 0] },
   ];
-  defs.forEach(([x,y,z,rz,sid])=>rod(x*1.12,y*1.12,z,rz,sid));
-
-  addLbl([1.5,0.6,0.1],'Bacillus rod','#3377cc','bact_rod');
-  addLbl([-1.3,1.1,0],'Dividing pair\n(binary fission)','#5599dd','bact_pair');
+  hyphaDefs.forEach(({ rot, pos }) => {
+    const h = mesh(new THREE.CylinderGeometry(0.055, 0.055, 2.8, 8), 0x88ccaa, { opacity: 0.88 });
+    h.position.set(...pos);
+    h.rotation.set(...rot);
+    g.add(h);
+  });
+  // Sporangiophore stalk (upright, narrower)
+  const stalk = mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.9, 8), 0x77bb99, { opacity: 0.85 });
+  stalk.position.set(0.05, 1.05, 0.05);
+  g.add(stalk);
+  // Sporangium at tip — dark round spore case
+  const spor = mesh(new THREE.SphereGeometry(0.30, 14, 10), 0x1a1a1a, { opacity: 0.95 });
+  spor.position.set(0.05, 1.52, 0.05);
+  g.add(spor);
+  // Second smaller sporangium
+  const spor2 = mesh(new THREE.SphereGeometry(0.20, 12, 8), 0x222222, { opacity: 0.90 });
+  spor2.position.set(0.45, 1.3, 0);
+  const stalk2 = mesh(new THREE.CylinderGeometry(0.030, 0.030, 0.6, 6), 0x77bb99, { opacity: 0.75 });
+  stalk2.position.set(0.38, 1.0, 0); stalk2.rotation.z = 0.25;
+  g.add(stalk2); g.add(spor2);
+  // Rhizoids at base — thin short cylinders downward
+  [[-0.3,-1.4,0],[-0.1,-1.4,0.08],[0.2,-1.4,-0.05],[0.4,-1.4,0.04]].forEach(([x,y,z]) => {
+    const rh = mesh(new THREE.CylinderGeometry(0.022, 0.015, 0.35, 6), 0x66aa88, { opacity: 0.65 });
+    rh.position.set(x, y, z);
+    rh.rotation.z = (Math.random() - 0.5) * 0.4;
+    g.add(rh);
+  });
+  // Labels
+  const lbH = makeLabel('Hypha (coenocytic)', accent); lbH.position.set(-1.5, -0.2, 0.3); g.add(lbH);
+  const lbS = makeLabel('Sporangium', '#333333'); lbS.position.set(0.9, 1.7, 0.3); g.add(lbS);
+  const lbR = makeLabel('Rhizoids', '#88aa88'); lbR.position.set(1.2, -1.5, 0.3); g.add(lbR);
   return g;
 }
 
-function buildPollen(){
-  const g=new THREE.Group();
-  const ex=M(new THREE.SphereGeometry(0.88,20,16),0xffcc22,0.94,55,'poll_ex');
-  g.add(ex);
-  const in2=M(new THREE.SphereGeometry(0.82,16,12),0xffe880,0.25,'','poll_ex');
-  g.add(in2);
-  for(let i=0;i<24;i++){
-    const theta=(i/24)*Math.PI*2;
-    const phi=Math.acos(2*((i*0.618033)%1)-1);
-    const sx=Math.sin(phi)*Math.cos(theta),sy=Math.cos(phi),sz=Math.sin(phi)*Math.sin(theta);
-    const sp=M(new THREE.ConeGeometry(0.022,0.22,4),0xee9900,0.9,'','poll_sp');
-    const r=0.88+0.11; sp.position.set(sx*r,sy*r,sz*r);
-    sp.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(sx,sy,sz));
-    g.add(sp);
-    sp.userData.sid='poll_sp';
-  }
-  [0,2.094,4.188].forEach(a=>{
-    const px=Math.sin(a)*.9,py=0,pz=Math.cos(a)*.9;
-    const pt=M(new THREE.TorusGeometry(0.09,0.024,6,14),0xcc7700,0.85,'','poll_pore');
-    pt.position.set(px,py,pz); pt.lookAt(0,0,0);
-    pt.userData.sid='poll_pore'; g.add(pt);
-  });
-  addLbl([-1.5,0.8,0],'Exine\n(sporopollenin)','#ffcc22','poll_ex');
-  addLbl([1.4,0.9,0],'Spine','#ee9900','poll_sp');
-  addLbl([1.2,-0.8,0],'Germination\npore','#cc7700','poll_pore');
-  return g;
-}
-
-function buildFungiHyphae(){
-  const g=new THREE.Group();
-  [[0,0,0,0],[0.3,0.2,0.55,0.4],[-0.28,0.15,-0.45,0.55]].forEach(([ox,oy,rz,rx])=>{
-    const h=M(new THREE.CylinderGeometry(0.058,0.058,2.8,8),0x77bbaa,0.88,25,'fung_hyp');
-    h.position.set(ox,oy,0); h.rotation.set(rx*0.3,0,rz); g.add(h);
-  });
-  const st1=M(new THREE.CylinderGeometry(0.038,0.038,0.9,8),0x66aa99,0.85);
-  st1.position.set(0.05,1.08,0.06); g.add(st1);
-  const sp1=M(new THREE.SphereGeometry(0.29,14,10),0x111111,0.95,'','fung_spor');
-  sp1.position.set(0.05,1.55,0.06); sp1.userData.sid='fung_spor'; g.add(sp1);
-  const st2=M(new THREE.CylinderGeometry(0.030,0.030,0.6,6),0x66aa99,0.75);
-  st2.position.set(0.42,1.02,0); st2.rotation.z=0.25; g.add(st2);
-  const sp2=M(new THREE.SphereGeometry(0.19,12,8),0x1a1a1a,0.92,'','fung_spor');
-  sp2.position.set(0.5,1.32,0); sp2.userData.sid='fung_spor'; g.add(sp2);
-  [[-0.28,-1.42,0],[-0.08,-1.42,0.08],[0.22,-1.42,-0.05],[0.42,-1.42,0.04]].forEach(([x,y,z])=>{
-    const rh=M(new THREE.CylinderGeometry(0.02,0.013,0.35,5),0x55aa88,0.68,'','fung_rhiz');
-    rh.position.set(x,y,z); rh.rotation.z=(Math.random()-.5)*.4;
-    rh.userData.sid='fung_rhiz'; g.add(rh);
-  });
-  addLbl([-1.5,-0.2,0],'Hypha','#77bbaa','fung_hyp');
-  addLbl([0.9,1.7,0],'Sporangium','#555555','fung_spor');
-  addLbl([1.2,-1.5,0],'Rhizoid','#55aa88','fung_rhiz');
-  return g;
-}
-
-const BUILDERS={
-  ONION_CELL:buildOnionCell,CHEEK_CELL:buildCheekCell,BLOOD_SMEAR:buildBloodSmear,
-  STOMATA:buildStomata,AMOEBA:buildAmoeba,YEAST:buildYeast,
-  BACTERIA:buildBacteria,POLLEN:buildPollen,FUNGI_HYPHAE:buildFungiHyphae,
+const BUILDERS = {
+  ONION_CELL: buildOnionCell,
+  CHEEK_CELL: buildCheekCell,
+  BLOOD_SMEAR: buildBloodSmear,
+  STOMATA: buildStomata,
+  AMOEBA: buildAmoeba,
+  YEAST: buildYeast,
+  BACTERIA: buildBacteria,
+  POLLEN: buildPollen,
+  FUNGI_HYPHAE: buildFungiHyphae,
 };
 
-// ══════════════════════════════════════════════════════════════════════
-// SCENE STATE
-// ══════════════════════════════════════════════════════════════════════
-let curGroup=null,curSpec=null,switching=false;
+// ═══════════════════════════════════════════════════════════════════════════
+// TRANSITION STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let currentGroup = null;
+let currentSpecimen = null;
+let currentConf = 0.9;
 
-function dispose(g){
-  if(!g)return;
-  g.traverse(o=>{
-    if(o.geometry)o.geometry.dispose();
-    if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}
+// transition: { phase:'out'|'in', elapsed:ms, group:Group, targetSpec, targetConf }
+let trans = null;
+const TRANS_OUT = 200;  // ms for fade out
+const TRANS_IN  = 420;  // ms for fade in
+
+function easeOut(t) { return 1 - (1 - t) * (1 - t); }
+function easeIn(t)  { return t * t; }
+function spring(t)  { // simple spring overshoot
+  return 1 + Math.sin(t * Math.PI * 2.5) * 0.08 * (1 - t);
+}
+
+function setGroupVisibility(group, opacity, scale) {
+  if (!group) return;
+  group.scale.setScalar(scale);
+  group.traverse(obj => {
+    if ((obj.isMesh || obj.isSprite) && obj.material) {
+      const base = obj.userData.baseOpacity !== undefined ? obj.userData.baseOpacity : 1.0;
+      obj.material.opacity = base * opacity;
+    }
   });
 }
 
-function loadNew(spec){
-  // Reset XS mode on specimen switch
-  if(_xsMode){
-    _xsMode=false;_fadeDir=0;_fadeT=0;
-    if(_xsGroup){_xsGroup.visible=false;_xsGroup=null;}
-    var btn=document.getElementById('xs-btn');
-    if(btn){btn.classList.remove('act');btn.textContent='✂ Cross-section';}
-  }
-  try {
-    // Remove old
-    if(curGroup){dispose(curGroup);scene.remove(curGroup);}
-    clearLabels();
-    // Build new
-    const g=BUILDERS[spec]();
-    scene.add(g);
-    g.rotation.x=rotX; g.rotation.y=rotY;
-    curGroup=g; curSpec=spec; switching=false;
-  } catch(e) {
-    console.error('loadNew error:', e);
-    document.getElementById('bot-txt').textContent = 'Error: ' + e.message;
-  }
-}
-
-function switchTo(spec){
-  if(spec===curSpec&&!switching)return;
-  showOverview(spec);
-  loadNew(spec);
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// PANEL
-// ══════════════════════════════════════════════════════════════════════
-function showOverview(spec){
-  const d=DATA[spec]; if(!d)return;
-  let h=`<div class="p-name">${d.name}</div>
-<div class="p-lat">${d.latin}</div>
-<div class="p-ch">${d.ch}</div>
-<div class="p-stain">${d.stain}</div>
-<div class="divider"></div>
-<div class="sec-lbl">Key structures — tap to learn</div>`;
-  d.overview.forEach(o=>{
-    h+=`<div class="ov-item"><div class="ov-dot" style="background:${o.col}"></div>
-<div class="ov-body"><strong>${o.lbl}</strong>${o.txt}</div></div>`;
+function disposeGroup(group) {
+  if (!group) return;
+  group.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) {
+      if (obj.material.map) obj.material.map.dispose();
+      obj.material.dispose();
+    }
   });
-  h+=`<div class="divider"></div>`;
-  if(d.animNote) h+=`<div class="anim-note">${d.animNote}</div>`;
-  document.getElementById('pc').innerHTML=h;
 }
 
-function openLesson(sid){
-  var LX=LESSONS_XS&&LESSONS_XS[sid];
-  var L=LX||LESSONS[sid]; if(!L)return;
-  var grp=(_xsMode&&_xsGroup)?_xsGroup:curGroup;
-  // Highlight mesh
-  if(grp){
-    grp.traverse(o=>{
-      if(o.isMesh&&o.material){
-        const e=o.userData.sid===sid?new THREE.Color(L.col):new THREE.Color(0);
-        if(o.material.emissive!==undefined){
-          o.material.emissive.set(e);
-          o.material.emissiveIntensity=o.userData.sid===sid?0.35:0;
+// ═══════════════════════════════════════════════════════════════════════════
+// SWITCH SPECIMEN — entry point for all input sources
+// ═══════════════════════════════════════════════════════════════════════════
+function switchToSpecimen(spec, conf) {
+  if (!BUILDERS[spec]) return;
+  if (spec === currentSpecimen && !trans) return; // no change
+
+  currentConf = conf || 0.9;
+  const targetSpec = spec;
+  const targetConf = currentConf;
+
+  // If already transitioning, kill old
+  if (trans && trans.group && trans.group !== currentGroup) {
+    scene.remove(trans.group);
+    disposeGroup(trans.group);
+  }
+
+  if (!currentGroup) {
+    // First specimen — go straight to in
+    const newGroup = BUILDERS[targetSpec]();
+    scene.add(newGroup);
+    setGroupVisibility(newGroup, 0, 0.01);
+    currentGroup = newGroup;
+    currentSpecimen = targetSpec;
+    trans = { phase: 'in', elapsed: 0, group: newGroup, conf: targetConf };
+  } else {
+    trans = { phase: 'out', elapsed: 0, group: currentGroup, targetSpec, targetConf };
+  }
+
+  // Show fun fact
+  showFunFact(META[spec].fact);
+  updateHUD(spec, conf);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HUD UPDATERS
+// ═══════════════════════════════════════════════════════════════════════════
+function updateHUD(spec, conf) {
+  const m = META[spec];
+  if (!m) return;
+  document.getElementById('spec-name').textContent = m.name;
+  document.getElementById('spec-lat').textContent = m.lat;
+  document.getElementById('spec-ch').textContent = m.ch;
+
+  // Structure pills — fade in staggered
+  const sc = document.getElementById('structs');
+  sc.innerHTML = m.structs.map((s, i) =>
+    `<span class="spill" style="transition-delay:${i*60}ms">${s}</span>`
+  ).join('');
+  requestAnimationFrame(() => {
+    sc.querySelectorAll('.spill').forEach(p => p.classList.add('vis'));
+  });
+
+  // Confidence ring
+  updateRing(conf, m.accent);
+}
+
+function showFunFact(text) {
+  const el = document.getElementById('fun-fact');
+  el.classList.remove('show');
+  void el.offsetWidth; // reflow
+  el.textContent = text;
+  requestAnimationFrame(() => {
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4500);
+  });
+}
+
+function updateRing(conf, accent) {
+  const cv = document.getElementById('ring-cv');
+  const ctx = cv.getContext('2d');
+  const cx = 26, cy = 26, r = 21;
+  ctx.clearRect(0, 0, 52, 52);
+  // Track
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 3; ctx.stroke();
+  // Fill
+  if (conf > 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + conf * Math.PI * 2);
+    ctx.strokeStyle = conf > 0.8 ? accent : conf > 0.55 ? '#f0a020' : '#e03c2c';
+    ctx.lineWidth = 3; ctx.stroke();
+  }
+  document.getElementById('ring-val').textContent = Math.round(conf * 100) + '%';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ORBIT CONTROLS
+// ═══════════════════════════════════════════════════════════════════════════
+let rotX = 0.15, rotY = 0;
+let isDragging = false;
+let prevX = 0, prevY = 0;
+let autoRot = true;
+let idleTimer = null;
+
+function onDragStart(x, y) {
+  isDragging = true;
+  prevX = x; prevY = y;
+  autoRot = false;
+  clearTimeout(idleTimer);
+  // Show hint once
+  document.getElementById('hint').classList.remove('show');
+}
+function onDragMove(x, y) {
+  if (!isDragging) return;
+  rotY += (x - prevX) * 0.008;
+  rotX += (y - prevY) * 0.008;
+  rotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, rotX));
+  prevX = x; prevY = y;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => { autoRot = true; }, 3000);
+}
+function onDragEnd() { isDragging = false; }
+
+const cv = document.getElementById('cv');
+cv.addEventListener('mousedown', e => onDragStart(e.clientX, e.clientY));
+window.addEventListener('mousemove', e => onDragMove(e.clientX, e.clientY));
+window.addEventListener('mouseup', onDragEnd);
+cv.addEventListener('touchstart', e => { onDragStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+cv.addEventListener('touchmove', e => { onDragMove(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+cv.addEventListener('touchend', onDragEnd);
+
+// Show drag hint after 2s if no specimen yet
+setTimeout(() => {
+  if (!currentSpecimen) document.getElementById('hint').classList.add('show');
+}, 2000);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LABEL FADE IN (after transition completes)
+// ═══════════════════════════════════════════════════════════════════════════
+function fadeInLabels(group, confOpacity) {
+  if (!group) return;
+  let delay = 0;
+  group.traverse(obj => {
+    if (obj.isSprite && obj.userData.isLabel) {
+      const d = delay;
+      delay += 80;
+      setTimeout(() => {
+        if (obj.material) {
+          let t = 0;
+          const iv = setInterval(() => {
+            t += 0.05;
+            if (obj.material) obj.material.opacity = Math.min(1, t) * 0.88 * confOpacity;
+            if (t >= 1) clearInterval(iv);
+          }, 16);
         }
+      }, d);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════════════════════════════════════════════════════
+let lastT = 0;
+let time = 0;
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min(now - lastT, 50); // cap at 50ms
+  lastT = now;
+  time += dt * 0.001;
+
+  // Auto-rotate
+  if (autoRot && currentGroup) {
+    rotY += 0.004;
+  }
+
+  // Apply rotation to current group
+  if (currentGroup) {
+    currentGroup.rotation.x = rotX;
+    currentGroup.rotation.y = rotY;
+  }
+
+  // Animate contractile vacuole in Amoeba
+  if (currentGroup && currentSpecimen === 'AMOEBA') {
+    currentGroup.traverse(obj => {
+      if (obj.userData.contractile && obj.isMesh) {
+        const s = 1 + 0.18 * Math.sin(time * 3.0);
+        obj.scale.setScalar(s);
       }
     });
   }
-  document.getElementById('pc').innerHTML=`
-<div class="back-btn" onclick="showOverview('${curSpec}');clearHighlight()">← back to overview</div>
-<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
-  <div style="width:11px;height:11px;border-radius:50%;background:${L.col};flex-shrink:0"></div>
-  <div class="s-name" style="color:${L.col}">${L.name}</div>
-</div>
-<div class="s-fn">${L.fn}</div>
-<div class="s-ncert">NCERT: ${L.ncert}</div>
-<div class="s-fact">${L.fact}</div>`;
-}
 
-function clearHighlight(){
-  if(!curGroup)return;
-  curGroup.traverse(o=>{
-    if(o.isMesh&&o.material&&o.material.emissive){
-      o.material.emissive.set(new THREE.Color(0));
-      o.material.emissiveIntensity=0;
-    }
-  });
-}
+  // Subtle point light orbit
+  pt.position.x = Math.sin(time * 0.4) * 3.5;
+  pt.position.y = Math.cos(time * 0.3) * 2.0;
 
-// ══════════════════════════════════════════════════════════════════════
-// CLICK / RAYCAST
-// ══════════════════════════════════════════════════════════════════════
-const ray=new THREE.Raycaster();
-const mouseV=new THREE.Vector2();
-let didDrag=false;
+  // Transition processing
+  if (trans) {
+    trans.elapsed += dt;
 
-function onPick(e){
-  if(didDrag)return;
-  const rect=cvEl.getBoundingClientRect();
-  const cx=e.changedTouches?e.changedTouches[0].clientX:e.clientX;
-  const cy=e.changedTouches?e.changedTouches[0].clientY:e.clientY;
-  mouseV.x=((cx-rect.left)/rect.width)*2-1;
-  mouseV.y=-((cy-rect.top)/rect.height)*2+1;
-  ray.setFromCamera(mouseV,camera);
-  if(!curGroup)return;
-  const hits=ray.intersectObjects(curGroup.children,true);
-  if(hits.length>0){
-    const sid=hits[0].object.userData.sid;
-    if(sid){
-      openLesson(sid);
-      if(sid==='stom_pore'||sid==='stom_guard') toggleStomata();
-    }
-  }
-}
-cvEl.addEventListener('click',onPick);
-cvEl.addEventListener('touchend',e=>{e.preventDefault();onPick(e);},{passive:false});
+    if (trans.phase === 'out') {
+      const t = Math.min(1, trans.elapsed / TRANS_OUT);
+      const opacity = 1 - easeOut(t);
+      const scale = 1 - easeOut(t) * 0.75;
+      setGroupVisibility(trans.group, opacity, scale);
 
-// ══════════════════════════════════════════════════════════════════════
-// TABS
-// ══════════════════════════════════════════════════════════════════════
-function tabClick(el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('act'));
-  el.classList.add('act');
-  switchTo(el.dataset.spec);
-}
+      if (t >= 1) {
+        // Remove old group
+        scene.remove(trans.group);
+        disposeGroup(trans.group);
+        currentGroup = null;
 
-// ══════════════════════════════════════════════════════════════════════
-// ORBIT
-// ══════════════════════════════════════════════════════════════════════
-let rotX=0.1,rotY=0,drag=false,px=0,py=0,autoR=true,idleT=null;
-function dStart(x,y){drag=true;didDrag=false;px=x;py=y;autoR=false;clearTimeout(idleT);}
-function dMove(x,y){
-  if(!drag)return;
-  if(Math.abs(x-px)>2||Math.abs(y-py)>2)didDrag=true;
-  rotY+=(x-px)*.009;rotX+=(y-py)*.009;
-  rotX=Math.max(-1.1,Math.min(1.1,rotX));px=x;py=y;
-  clearTimeout(idleT);idleT=setTimeout(()=>{autoR=true;},4000);
-}
-function dEnd(){drag=false;}
-cvEl.addEventListener('mousedown',e=>dStart(e.clientX,e.clientY));
-window.addEventListener('mousemove',e=>dMove(e.clientX,e.clientY));
-window.addEventListener('mouseup',dEnd);
-cvEl.addEventListener('touchstart',e=>dStart(e.touches[0].clientX,e.touches[0].clientY),{passive:true});
-cvEl.addEventListener('touchmove',e=>{dMove(e.touches[0].clientX,e.touches[0].clientY);e.preventDefault();},{passive:false});
-cvEl.addEventListener('touchend',dEnd);
+        // Build and add new group
+        const newGroup = BUILDERS[trans.targetSpec]();
+        scene.add(newGroup);
+        newGroup.rotation.x = rotX;
+        newGroup.rotation.y = rotY;
+        setGroupVisibility(newGroup, 0, 0.08);
+        currentGroup = newGroup;
+        currentSpecimen = trans.targetSpec;
+        const targetConf = trans.targetConf;
+        trans = { phase: 'in', elapsed: 0, group: newGroup, conf: targetConf };
+      }
 
-// ══════════════════════════════════════════════════════════════════════
-// SPECIMEN ANIMATIONS
-// ══════════════════════════════════════════════════════════════════════
-let stomOpen=true,stomAngle=0.55,stomTarget=0.55;
-function toggleStomata(){
-  stomTarget=stomTarget>0.1?0:0.55;
-  stomOpen=!stomOpen;
-}
-
-let time=0,yeastT=0,bacSep=0,bacDir=1;
-
-// XS state — declared here so animate2 can access
-var _xsCache={}, _xsMode=false, _xsGroup=null, _fadeDir=0, _fadeT=0;
-
-function animate2(dt){
-  if(!curGroup)return;
-  time+=dt;
-
-  // ── XS fade transition ──────────────────────────────────
-  if(_fadeDir!==0){
-    _fadeT+=dt*2.5;
-    var ft=Math.min(_fadeT,1);
-    if(_fadeDir===1){
-      curGroup.traverse(function(o){if(o.isMesh&&o.material&&o.userData.baseOp!==undefined)o.material.opacity=o.userData.baseOp*(1-ft);});
-      if(_xsGroup)_xsGroup.traverse(function(o){if(o.isMesh&&o.material&&o.userData.baseOp!==undefined){o.material.transparent=true;o.material.opacity=o.userData.baseOp*ft;}});
-      if(ft>=1){_fadeDir=0;curGroup.visible=false;}
-    } else {
-      if(_xsGroup)_xsGroup.traverse(function(o){if(o.isMesh&&o.material&&o.userData.baseOp!==undefined)o.material.opacity=o.userData.baseOp*(1-ft);});
-      curGroup.visible=true;
-      curGroup.traverse(function(o){if(o.isMesh&&o.material&&o.userData.baseOp!==undefined)o.material.opacity=o.userData.baseOp*ft;});
-      if(ft>=1){_fadeDir=0;if(_xsGroup){_xsGroup.visible=false;_xsGroup=null;}}
-    }
-  }
-
-  // ── Sync XS group rotation with main group ───────────────
-  if(_xsGroup&&_xsMode)_xsGroup.rotation.set(curGroup.rotation.x,curGroup.rotation.y,curGroup.rotation.z);
-
-  // ── Scale bar ─────────────────────────────────────────────
-  var sc=document.getElementById('sc-cv');
-  if(sc&&curSpec&&SCALE_UM[curSpec]){
-    var W2=wrap.clientWidth,H2=wrap.clientHeight;
-    if(sc.width!==W2)sc.width=W2;if(sc.height!==H2)sc.height=H2;
-    var ctx=sc.getContext('2d');ctx.clearRect(0,0,W2,H2);
-    var um=SCALE_SHOW[curSpec],pxU=H2/(2*Math.tan(19*Math.PI/180)*6);
-    var bw=Math.round((um/SCALE_UM[curSpec])*pxU),bx=14,by=H2-14,bh=4;
-    ctx.fillStyle='rgba(0,0,0,0.45)';ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(bx-4,by-bh-6,bw+8,bh+16,3);
-    else ctx.rect(bx-4,by-bh-6,bw+8,bh+16);
-    ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.75)';ctx.fillRect(bx,by-bh,bw,bh);
-    ctx.strokeStyle='rgba(255,255,255,0.75)';ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.moveTo(bx,by-bh-3);ctx.lineTo(bx,by+1);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(bx+bw,by-bh-3);ctx.lineTo(bx+bw,by+1);ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='bold 8.5px system-ui,sans-serif';
-    ctx.textAlign='center';ctx.fillText(um+' µm',bx+bw/2,by+9);
-  }
-
-  if(curSpec==='STOMATA'){
-    stomAngle+=(stomTarget-stomAngle)*.08;
-    if(curGroup.userData.mainPair){
-      const p=curGroup.userData.mainPair;
-      // Guard cells
-      p.children.forEach((c,i)=>{
-        if(c.userData&&c.userData.sid==='stom_guard'){
-          if(i===0)c.rotation.z=-0.48*(stomAngle/.55);
-          else if(i===1)c.rotation.z=0.48*(stomAngle/.55);
-          if(i===0)c.position.x=-(stomAngle*0.65+0.15);
-          else if(i===1)c.position.x=(stomAngle*0.65+0.15);
+    } else if (trans.phase === 'in') {
+      const t = Math.min(1, trans.elapsed / TRANS_IN);
+      const confOpacity = 0.4 + (trans.conf || 0.9) * 0.6;
+      const opacity = easeOut(t) * confOpacity;
+      const scale = spring(t);
+      // Apply to non-label meshes
+      trans.group.traverse(obj => {
+        if ((obj.isMesh) && obj.material) {
+          const base = obj.userData.baseOpacity !== undefined ? obj.userData.baseOpacity : 1.0;
+          obj.material.opacity = base * opacity;
         }
       });
+      trans.group.scale.setScalar(scale);
+
+      if (t >= 1) {
+        // Fade in labels
+        fadeInLabels(trans.group, confOpacity);
+        trans = null;
+      }
     }
   }
 
-  if(curSpec==='AMOEBA'&&curGroup.userData.pseudos){
-    curGroup.userData.pseudos.forEach((ps,i)=>{
-      const s=1+0.18*Math.sin(time*1.3+i*2.0);
-      ps.scale.set(1,s,1);
-    });
-    curGroup.traverse(o=>{
-      if(o.userData.cv){const s=1+0.22*Math.sin(time*2.6);o.scale.setScalar(s);}
-    });
-  }
-
-  if(curSpec==='YEAST'&&curGroup.userData.budMesh){
-    yeastT+=dt;
-    const cycle=yeastT%9;
-    curGroup.userData.budMesh.scale.setScalar(0.85+0.25*(cycle/9));
-  }
-
-  if(curSpec==='BLOOD_SMEAR'){
-    curGroup.traverse(o=>{
-      if(o.userData&&o.userData.rbc){
-        o.rotation.z+=0.003;
-        o.position.y+=Math.sin(time*0.5+o.position.x)*0.0004;
-      }
-    });
-  }
-
-  if(curSpec==='BACTERIA'){
-    bacSep+=dt*bacDir*0.016;
-    if(bacSep>0.2||bacSep<0)bacDir*=-1;
-    curGroup.traverse(o=>{
-      if(o.userData&&o.userData.sid==='bact_pair'){
-        if(o.position.x<0)o.position.x=-0.52*1.12-bacSep;
-        else o.position.x=0.02*1.12+bacSep;
-      }
-    });
-  }
+  renderer.render(scene, camera);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// RENDER LOOP
-// ══════════════════════════════════════════════════════════════════════
-let lastT=0;
-function render(now){
-  // Start render loop
-requestAnimationFrame(render);
-  const dt=Math.min((now-lastT)*.001,.05);lastT=now;
+// ═══════════════════════════════════════════════════════════════════════════
+// INPUT SOURCES
+// ═══════════════════════════════════════════════════════════════════════════
 
-  if(autoR&&curGroup)rotY+=.004;
-  if(curGroup){curGroup.rotation.x=rotX;curGroup.rotation.y=rotY;}
-
-  // No fade transition — instant switch for reliability
-
-  animate2(dt);
-  renderLabels();
-  renderer.render(scene,camera);
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// INPUT: postMessage + SSE
-// ══════════════════════════════════════════════════════════════════════
-const IN_IFRAME=window.self!==window.top;
-const API=location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8001':'https://eduscope-api.featherfly.in';
-
-window.addEventListener('message',e=>{
-  if(e.data&&e.data.type==='FEATHERFLY_SPECIMEN'&&BUILDERS[e.data.specimen]){
-    const tab=document.querySelector(`.tab[data-spec="${e.data.specimen}"]`);
-    if(tab&&e.data.specimen!==curSpec)tabClick(tab);
-    else if(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('act'));tab.classList.add('act');}
-    document.getElementById('dot').className='dot live';
-    document.getElementById('bot-txt').textContent='pod live';
-    const c=e.data.confidence;
-    if(c)document.getElementById('bot-conf').textContent=Math.round(c*100)+'% confidence';
+// 1. postMessage from parent iframe
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'FEATHERFLY_SPECIMEN' && BUILDERS[e.data.specimen]) {
+    const dot = document.getElementById('dot');
+    dot.classList.add('live'); dot.classList.remove('err');
+    document.getElementById('dot-txt').textContent = 'live';
+    switchToSpecimen(e.data.specimen, e.data.confidence || 0.9);
   }
 });
 
-if(!IN_IFRAME){
-  let _es=null;
-  function sse(){
-    _es=new EventSource(API+'/stream');
-    _es.onopen=()=>{document.getElementById('dot').className='dot live';document.getElementById('bot-txt').textContent='pod live';};
-    _es.onmessage=e=>{try{const d=JSON.parse(e.data);if(!d.specimen||!BUILDERS[d.specimen])return;const t=document.querySelector(`.tab[data-spec="${d.specimen}"]`);if(t)tabClick(t);if(d.confidence)document.getElementById('bot-conf').textContent=Math.round(d.confidence*100)+'%';}catch(err){}};
-    _es.onerror=()=>{document.getElementById('dot').className='dot err';document.getElementById('bot-txt').textContent='reconnecting';_es.close();const fb=setInterval(async()=>{try{const r=await fetch(API+'/latest',{signal:AbortSignal.timeout(2000)});const d=await r.json();if(d.specimen&&BUILDERS[d.specimen]){const t=document.querySelector(`.tab[data-spec="${d.specimen}"]`);if(t)tabClick(t);}}catch(e){}},3000);setTimeout(()=>{clearInterval(fb);sse();},6000);};
-  }
-  sse();
+// 2. SSE — only when NOT in iframe
+let _es = null;
+function connectSSE() {
+  if (IN_IFRAME) return; // parent handles SSE and sends postMessage
+  _es = new EventSource(API + '/stream');
+  _es.onopen = () => {
+    const dot = document.getElementById('dot');
+    dot.classList.add('live'); dot.classList.remove('err');
+    document.getElementById('dot-txt').textContent = 'live';
+  };
+  _es.onmessage = e => {
+    try {
+      const d = JSON.parse(e.data);
+      if (!d.specimen || !BUILDERS[d.specimen]) return;
+      switchToSpecimen(d.specimen, d.confidence || 0.9);
+    } catch(err) {}
+  };
+  _es.onerror = () => {
+    const dot = document.getElementById('dot');
+    dot.classList.remove('live'); dot.classList.add('err');
+    document.getElementById('dot-txt').textContent = 'reconnecting';
+    _es.close();
+    // Fallback poll + reconnect
+    const fb = setInterval(async () => {
+      try {
+        const r = await fetch(API + '/latest', { signal: AbortSignal.timeout(2000) });
+        const d = await r.json();
+        if (d.specimen && BUILDERS[d.specimen]) {
+          dot.classList.add('live'); dot.classList.remove('err');
+          document.getElementById('dot-txt').textContent = 'polling';
+          switchToSpecimen(d.specimen, d.confidence || 0.9);
+        }
+      } catch(err) {}
+    }, 3000);
+    setTimeout(() => { clearInterval(fb); connectSSE(); }, 6000);
+  };
 }
 
-
-// ══════════════════════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════════════════════
-const urlSpec=new URLSearchParams(location.search).get('specimen');
-const initSpec=urlSpec&&BUILDERS[urlSpec]?urlSpec:'ONION_CELL';
-const initTab=document.querySelector(`.tab[data-spec="${initSpec}"]`);
-if(initTab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('act'));initTab.classList.add('act');}
-showOverview(initSpec);
-loadNew(initSpec);
-requestAnimationFrame(render);
-
-// ══════════════════════════════════════════════════════════════════════
-// SCALE BAR DATA
-// ══════════════════════════════════════════════════════════════════════
-var SCALE_UM  ={ONION_CELL:23,CHEEK_CELL:40,BLOOD_SMEAR:8,STOMATA:21,AMOEBA:154,YEAST:20,BACTERIA:8,POLLEN:28,FUNGI_HYPHAE:43};
-var SCALE_SHOW={ONION_CELL:20,CHEEK_CELL:50,BLOOD_SMEAR:10,STOMATA:20,AMOEBA:100,YEAST:10,BACTERIA:5,POLLEN:20,FUNGI_HYPHAE:30};
-
-// ══════════════════════════════════════════════════════════════════════
-// XS LESSONS
-// ══════════════════════════════════════════════════════════════════════
-var LESSONS_XS={
-  xs_onion_wall:{name:'Cell Wall (cross-section)',col:'#c07840',fn:'Seen from inside the wall appears as a thick rectangular frame. Made of cellulose. Plants communicate through plasmodesmata — tiny channels in this wall.',ncert:'Class 9, Ch.5',fact:'Cell wall is NOT living — secreted by the membrane. Plant stems stay rigid because of cell wall + vacuole turgor pressure together.'},
-  xs_onion_vac:{name:'Central Vacuole',col:'#e8c090',fn:'Takes 90% of mature plant cell volume. Pushes nucleus to the edge. Filled with cell sap — water, minerals, sugars.',ncert:'Class 9, Ch.5',fact:'Wilt = vacuole losing water. Turgor pressure of vacuole keeps stems upright — no vacuole, no standing plant.'},
-  xs_onion_nuc:{name:'Nucleus (cross-section)',col:'#8b2500',fn:'Nuclear envelope (double membrane) visible. Chromatin inside. Acetocarmine stains DNA dark red.',ncert:'Class 9, Ch.5',fact:'Root tip nucleus is highly active — constant DNA replication to produce new cells that push the root through soil.'},
-  xs_cheek_mem:{name:'Cell Membrane',col:'#6688aa',fn:'Phospholipid bilayer — 7nm thick, too thin for school microscope. The cross-section model shows its position clearly.',ncert:'Class 9, Ch.5',fact:'Fluid Mosaic Model (Singer & Nicolson, 1972): proteins float in the lipid bilayer like icebergs in a sea.'},
-  xs_cheek_nuc:{name:'Nucleus (double membrane)',col:'#1a3aaa',fn:'Double nuclear envelope with ~3000 nuclear pores. Nucleolus (darker dot inside) makes rRNA for ribosomes.',ncert:'Class 9, Ch.5',fact:'2 metres of DNA is coiled into a 6-micrometre nucleus. If uncoiled it would stretch from Earth to Sun and back — 300 times.'},
-  xs_cheek_cyt:{name:'Cytoplasm',col:'#90b8d8',fn:'70% water with dissolved proteins and ions. All organelles float here. Less stained than nucleus because it has less DNA.',ncert:'Class 9, Ch.5',fact:'Cytoplasm streams continuously in plant cells (cytoplasmic streaming) — organelles circulate around the vacuole.'},
-  xs_rbc_prof:{name:'Biconcave profile (side view)',col:'#f0a090',fn:'Key feature — RBC is concave on BOTH sides like a squashed donut. This gives 20-30% more surface area for O₂ exchange than a flat disc.',ncert:'Class 11, Ch.18',fact:'This shape also lets RBCs bend and squeeze through capillaries narrower than themselves.'},
-  xs_rbc_hb:{name:'Haemoglobin interior',col:'#e87070',fn:'Entire interior packed with haemoglobin — 270 million molecules per RBC. No nucleus, no mitochondria, no rough ER. Maximum space for Hb.',ncert:'Class 11, Ch.18',fact:'Sickle cell anaemia: one amino acid change makes Hb crystallise at low O₂. RBCs collapse, block capillaries.'},
-  xs_wbc_nuc:{name:'Lobed nucleus (cross-section)',col:'#7733bb',fn:'3-5 lobes connected by thin bridges. Cross-section shows this clearly. The lobed shape lets neutrophils squeeze through capillary walls to reach infections.',ncert:'Class 11, Ch.18',fact:'Neutrophils live 5-7 days. They phagocytose bacteria and die — the white material of pus is dead neutrophils.'},
-  xs_stom_thick:{name:'Thick inner wall',col:'#2a5a10',fn:'Inner wall facing the pore is 3× thicker than outer wall. When turgid, only thin outer wall stretches — guard cell bends outward, pore opens. Pure physics, no muscles.',ncert:'Class 11, Ch.11',fact:'156 million stomata per corn leaf, each opening independently. This is entirely controlled by K⁺ ion pumps.'},
-  xs_stom_cp:{name:'Chloroplast (inside guard cell)',col:'#22aa44',fn:'Guard cells are the ONLY epidermal cells with chloroplasts. They need ATP from photosynthesis to power K⁺ ion pumps that drive opening.',ncert:'Class 11, Ch.11',fact:'Cross-section shows grana (stacked thylakoids) inside each chloroplast where light reactions happen.'},
-  xs_stom_vac:{name:'Vacuole (turgor driver)',col:'#aaddaa',fn:'K⁺ ions enter guard cell → water follows by osmosis → vacuole swells → turgor rises → cell bends → pore opens. This whole sequence takes ~15 minutes.',ncert:'Class 11, Ch.11',fact:'Guard cell vacuole is the key actuator. No vacuole pressure = no stomatal movement.'},
-  xs_amoe_ecto:{name:'Ectoplasm (outer, gel)',col:'#d8e8e8',fn:'Clear, stiff, gel-like outer cytoplasm. Converts to fluid endoplasm at pseudopodium tip — this sol-gel conversion drives amoeboid movement.',ncert:'Class 8, Ch.2',fact:'Ectoplasm streams outward into pseudopodia at 10 µm/second — pulled by actin polymerisation at the leading edge.'},
-  xs_amoe_endo:{name:'Endoplasm (inner, fluid)',col:'#a8c8c8',fn:'Granular, fluid inner cytoplasm. Contains all organelles — nucleus, food vacuoles, contractile vacuole. Streams continuously.',ncert:'Class 8, Ch.2',fact:'Amoeba can change direction in seconds by converting ectoplasm to endoplasm at one end and vice versa at the other.'},
-  xs_yeast_wall:{name:'Cell wall (glucan+mannan)',col:'#8899aa',fn:'NOT cellulose (plants) or chitin (fungi like Rhizopus) — yeast wall is glucan and mannan. 100-200nm thick.',ncert:'Class 11, Ch.2',fact:'Antifungal drugs target ergosterol in yeast membrane — absent in human cells. That is why they are selectively toxic to fungi.'},
-  xs_yeast_vac:{name:'Large vacuole',col:'#aabbcc',fn:'Yeast has a large vacuole equivalent to animal lysosomes. Stores amino acids, polyphosphate. Degrades waste proteins.',ncert:'Class 11, Ch.2',fact:'Under nutrient starvation yeast vacuoles fuse into one giant vacuole and digest cytoplasm — controlled autophagy.'},
-  xs_bact_wall:{name:'Cell wall (peptidoglycan)',col:'#557799',fn:'Made of peptidoglycan — sugar chains cross-linked by amino acids. NOT cellulose or chitin. Unique to bacteria.',ncert:'Class 8; Class 11, Ch.2',fact:'Penicillin blocks peptidoglycan synthesis. Cell wall weakens and the bacterium bursts. Human cells have no cell wall — safe for us.'},
-  xs_bact_mem:{name:'Cell membrane (only membrane)',col:'#4488aa',fn:'The ONLY membrane in a prokaryote. All cell functions — respiration, protein synthesis — happen at or near this membrane. No separate organelles.',ncert:'Class 11, Ch.2',fact:'In bacteria energy production happens at the cell membrane (not mitochondria). Invaginations called mesosomes increase this surface area.'},
-  xs_bact_nuc:{name:'Nucleoid (no nuclear membrane)',col:'#88aadd',fn:'DNA sits in the nucleoid region but there is NO nuclear membrane. This is the defining feature of prokaryotes. Circular DNA, no histones.',ncert:'Class 11, Ch.2',fact:'E. coli circular chromosome: 4.6 million base pairs, 1.5mm long when uncoiled — packed 1000× into a 2µm cell.'},
-  xs_poll_exine:{name:'Exine (outer, sporopollenin)',col:'#ffcc22',fn:'Thick outer wall. Cross-section shows multiple sculpted layers. Most chemically resistant biological substance — not degraded by any enzyme or acid.',ncert:'Class 12, Ch.2',fact:'Pollen exines in 10,000-year-old ice cores are intact and identifiable — scientists use them to reconstruct Ice Age vegetation maps.'},
-  xs_poll_intine:{name:'Intine (inner, cellulose)',col:'#ffe077',fn:'Thin inner wall of pectin and cellulose. Softer than exine. The pollen tube grows through the germination pore from this layer.',ncert:'Class 12, Ch.2',fact:'Intine provides the structural template for pollen tube growth — the tube follows calcium gradients in the style to reach the ovule.'},
-  xs_poll_gen:{name:'Generative cell',col:'#ee6600',fn:'Smaller cell inside pollen. Will divide into two male gametes. One fertilises egg (zygote), other fertilises polar nuclei (endosperm) — double fertilisation.',ncert:'Class 12, Ch.2',fact:'Double fertilisation is unique to angiosperms. It produces both the embryo AND the nutritive endosperm tissue simultaneously.'},
-  xs_poll_veg:{name:'Vegetative cell',col:'#dd9900',fn:'Larger cell — its nucleus controls pollen tube growth. Tube can grow several centimetres through the style to reach the ovule.',ncert:'Class 12, Ch.2',fact:'Pollen tube is the fastest-growing plant cell — up to 1cm per hour in some species, racing against competing pollen tubes.'},
-  xs_fung_wall:{name:'Cell wall (chitin)',col:'#77bbaa',fn:'Fungal wall is chitin — same as insect exoskeleton. NOT cellulose (plants). This biochemical difference is why fungi are in their own kingdom.',ncert:'Class 10, Ch.8',fact:'Chitin is the second most abundant biopolymer on Earth after cellulose — insect exoskeletons, crustacean shells, fungal walls, all chitin.'},
-  xs_fung_nuclei:{name:'Multiple nuclei (coenocytic)',col:'#33aaaa',fn:'Rhizopus hyphae have NO cross-walls (septa). One continuous tube with many nuclei in shared cytoplasm — this is coenocytic. Organelles can travel the entire mycelium.',ncert:'Class 10, Ch.8',fact:'The largest organism on Earth is a honey fungus mycelium in Oregon — 8.9 km² area, one coenocytic network, over 8,000 years old.'},
-};
-
-// ══════════════════════════════════════════════════════════════════════
-// CROSS-SECTION BUILDERS (9 specimens)
-// ══════════════════════════════════════════════════════════════════════
-
-function xsOnionCell(){
-  var g=new THREE.Group();
-  [{cx:-0.62,ci:0},{cx:0.62,ci:1}].forEach(function(cell){
-    var cx=cell.cx,ci=cell.ci;
-    var wall=M(new THREE.BoxGeometry(1.12,0.7,0.06),0xc07840,0.95,30,'xs_onion_wall');wall.position.set(cx,0,0);g.add(wall);
-    var cyt=M(new THREE.BoxGeometry(0.96,0.55,0.05),0xe8c090,0.85,10,'xs_onion_vac');cyt.position.set(cx,0,0.01);g.add(cyt);
-    var vac=M(new THREE.BoxGeometry(0.55,0.32,0.05),0xf0d8b0,0.5,5,'xs_onion_vac');vac.position.set(cx,0.04,0.02);g.add(vac);
-    var nuc=M(new THREE.SphereGeometry(0.1,12,8),0x8b2500,0.95,40,'xs_onion_nuc');nuc.scale.set(1.3,1,0.6);nuc.position.set(cx+(ci===0?0.28:-0.28),-0.12,0.03);g.add(nuc);
-    var nlo=M(new THREE.SphereGeometry(0.035,8,6),0x6a1000,0.95,20,'xs_onion_nuc');nlo.position.set(cx+(ci===0?0.3:-0.3),-0.1,0.05);g.add(nlo);
-  });
-  var cut=new THREE.Mesh(new THREE.PlaneGeometry(2.5,0.012),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.6}));cut.position.z=0.06;g.add(cut);
-  addLbl([-1.4,0.6,0.1],'Cell wall','#c07840','xs_onion_wall');
-  addLbl([0,0.35,0.1],'Central vacuole','#e8c090','xs_onion_vac');
-  addLbl([-0.9,-0.5,0.1],'Nucleus\n(pushed aside)','#8b2500','xs_onion_nuc');
-  return g;
+// 3. URL param — for standalone testing
+const urlSpec = new URLSearchParams(location.search).get('specimen');
+if (urlSpec && BUILDERS[urlSpec]) {
+  // Small delay so Three.js is ready
+  setTimeout(() => switchToSpecimen(urlSpec, 0.95), 100);
+} else if (!IN_IFRAME) {
+  // Show a default specimen when opened standalone
+  setTimeout(() => switchToSpecimen('ONION_CELL', 0.92), 100);
 }
 
-function xsCheekCell(){
-  var g=new THREE.Group();
-  var body=M(new THREE.SphereGeometry(1.1,24,16),0xc8dff0,0.7,15,'xs_cheek_cyt');body.scale.set(1.4,0.72,0.18);g.add(body);
-  var memW=new THREE.Mesh(new THREE.SphereGeometry(1.13,20,14),new THREE.MeshPhongMaterial({color:0x6688bb,wireframe:true,transparent:true,opacity:0.35}));memW.scale.set(1.4,0.72,0.18);memW.userData.sid='xs_cheek_mem';g.add(memW);
-  var nm=M(new THREE.SphereGeometry(0.34,14,10),0x2244bb,0.25,10,'xs_cheek_nuc');nm.scale.set(1.25,0.95,0.6);nm.position.set(0.1,0.04,0.03);g.add(nm);
-  var nmW=new THREE.Mesh(new THREE.SphereGeometry(0.37,14,10),new THREE.MeshPhongMaterial({color:0x4466cc,wireframe:true,transparent:true,opacity:0.5}));nmW.scale.set(1.25,0.95,0.6);nmW.position.set(0.1,0.04,0.03);nmW.userData.sid='xs_cheek_nuc';g.add(nmW);
-  var nuc=M(new THREE.SphereGeometry(0.3,14,10),0x1a3aaa,0.88,50,'xs_cheek_nuc');nuc.scale.set(1.25,0.95,0.6);nuc.position.set(0.1,0.04,0.03);g.add(nuc);
-  var nlo=M(new THREE.SphereGeometry(0.1,10,8),0x0a1a88,0.95,30,'xs_cheek_nuc');nlo.position.set(0.12,0.06,0.05);g.add(nlo);
-  for(var i=0;i<8;i++){var a=i/8*Math.PI*2;var pp=M(new THREE.SphereGeometry(0.022,5,4),0x88aadd,0.9,10,'xs_cheek_nuc');pp.position.set(0.1+Math.cos(a)*0.33,0.04+Math.sin(a)*0.28,0.04);g.add(pp);}
-  var cut=new THREE.Mesh(new THREE.PlaneGeometry(2.8,0.01),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.55}));cut.position.z=0.04;g.add(cut);
-  addLbl([1.6,-0.5,0.1],'Cell membrane\n(phospholipid bilayer)','#6688aa','xs_cheek_mem');
-  addLbl([0.1,0.7,0.1],'Nucleus + double\nnuclear membrane','#4466cc','xs_cheek_nuc');
-  addLbl([-1.4,0.3,0.1],'Cytoplasm','#90b8d8','xs_cheek_cyt');
-  return g;
+// Start SSE if standalone
+connectSSE();
+
+// If in iframe but no postMessage after 3s, show ONION as placeholder
+if (IN_IFRAME) {
+  setTimeout(() => {
+    if (!currentSpecimen) switchToSpecimen('ONION_CELL', 0.88);
+  }, 3000);
 }
 
-function xsBloodSmear(){
-  var g=new THREE.Group();
-  [[-0.3,0.3],[1.1,-0.2]].forEach(function(pos){
-    var x=pos[0],y=pos[1];
-    var rbc=M(new THREE.SphereGeometry(0.52,20,12),0xf0c0b8,0.92,40,'xs_rbc_prof');rbc.scale.set(1,0.16,0.9);rbc.position.set(x,y,0);g.add(rbc);
-    var dep=M(new THREE.SphereGeometry(0.25,14,10),0xf8e0dc,0.6,5,'xs_rbc_hb');dep.scale.set(1,0.1,0.85);dep.position.set(x,y,0.01);g.add(dep);
-    var hb=M(new THREE.SphereGeometry(0.4,14,10),0xe87070,0.28,5,'xs_rbc_hb');hb.scale.set(1,0.13,0.88);hb.position.set(x,y,0.01);g.add(hb);
-  });
-  var wbc=M(new THREE.SphereGeometry(0.65,14,12),0xe8d0e0,0.8,15,'xs_wbc_nuc');wbc.position.set(-0.3,-0.6,0);g.add(wbc);
-  [[-0.18,-0.6,0.08],[0,-0.5,0.08],[0.18,-0.62,0.08]].forEach(function(p){var l=M(new THREE.SphereGeometry(0.2,12,8),0x7733bb,0.92,50,'xs_wbc_nuc');l.position.set(p[0],p[1],p[2]);g.add(l);});
-  var c1=M(new THREE.CylinderGeometry(0.07,0.07,0.2,8),0x6622aa,0.85,20,'xs_wbc_nuc');c1.rotation.z=Math.PI/2;c1.position.set(-0.09,-0.56,0.08);g.add(c1);
-  var c2=M(new THREE.CylinderGeometry(0.07,0.07,0.2,8),0x6622aa,0.85,20,'xs_wbc_nuc');c2.rotation.z=Math.PI/2;c2.position.set(0.09,-0.56,0.08);g.add(c2);
-  var cut=new THREE.Mesh(new THREE.PlaneGeometry(3.2,0.01),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.5}));cut.position.set(0.4,0,0.05);g.add(cut);
-  addLbl([-1.2,0.7,0.1],'Biconcave profile\n(side view — hollow centre)','#f0a090','xs_rbc_prof');
-  addLbl([1.5,0.3,0.1],'Haemoglobin\n(no nucleus inside)','#e87070','xs_rbc_hb');
-  addLbl([-1.2,-1.0,0.1],'WBC lobed nucleus\n(3 lobes connected)','#9944cc','xs_wbc_nuc');
-  return g;
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  camera.aspect = W() / H();
+  camera.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+});
 
-function xsStomata(){
-  var g=new THREE.Group();
-  [-1,1].forEach(function(side){
-    var s=side;
-    var outer=M(new THREE.SphereGeometry(0.55,14,10),0x78b040,0.88,25,'xs_stom_thick');outer.scale.set(0.48,1.3,0.42);outer.position.set(s*0.42,0,0);g.add(outer);
-    var inner=M(new THREE.SphereGeometry(0.55,14,10),0x2a5a10,0.95,40,'xs_stom_thick');inner.scale.set(0.18,1.1,0.35);inner.position.set(s*0.12,0,0.02);g.add(inner);
-    var vac=M(new THREE.SphereGeometry(0.28,10,8),0xaaddaa,0.65,10,'xs_stom_vac');vac.scale.set(0.7,1.1,0.5);vac.position.set(s*0.35,0,0.05);g.add(vac);
-    [[0,0.28],[0,-0.28],[0.08,0.1],[0.08,-0.12]].forEach(function(d){var cp=M(new THREE.SphereGeometry(0.068,7,5),0x22aa44,0.95,30,'xs_stom_cp');cp.position.set(s*0.38,d[0],0.06+d[1]*0.2);g.add(cp);});
-    var nuc=M(new THREE.SphereGeometry(0.1,10,8),0x1a6010,0.92,30,'xs_stom_thick');nuc.position.set(s*0.42,0.3,0.06);g.add(nuc);
-  });
-  var pore=M(new THREE.BoxGeometry(0.14,1.4,0.08),0x0a1a08,0.95,5,'xs_stom_thick');pore.position.set(0,0,0.01);g.add(pore);
-  var cut=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.01),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.5}));cut.position.z=0.07;g.add(cut);
-  addLbl([-1.4,0.8,0.1],'Thick inner wall\n→ drives opening','#2a5a10','xs_stom_thick');
-  addLbl([1.4,0.8,0.1],'Chloroplasts\n(unique to guard cells)','#22aa44','xs_stom_cp');
-  addLbl([-1.4,-0.7,0.1],'Vacuole\n(turgor = opening force)','#aaddaa','xs_stom_vac');
-  return g;
-}
-
-function xsAmoeba(){
-  var g=new THREE.Group();
-  var ecto=M(new THREE.SphereGeometry(1.08,18,14),0xd8e8e8,0.5,10,'xs_amoe_ecto');ecto.scale.set(1.3,0.92,0.38);g.add(ecto);
-  var ectoW=new THREE.Mesh(new THREE.SphereGeometry(1.06,18,14),new THREE.MeshPhongMaterial({color:0xaabbcc,wireframe:true,transparent:true,opacity:0.22}));ectoW.scale.set(1.3,0.92,0.38);g.add(ectoW);
-  var endo=M(new THREE.SphereGeometry(0.88,16,12),0xa8c8c8,0.68,15,'xs_amoe_endo');endo.scale.set(1.3,0.92,0.38);g.add(endo);
-  var nuc=M(new THREE.SphereGeometry(0.25,12,10),0x2255aa,0.9,40,'xs_amoe_endo');nuc.scale.set(1.2,1,0.7);nuc.position.set(0.1,0.06,0.1);g.add(nuc);
-  var fv=M(new THREE.SphereGeometry(0.18,10,8),0x22aa44,0.88,40,'xs_amoe_endo');fv.scale.set(1.4,0.9,0.7);fv.position.set(0.42,-0.3,0.09);g.add(fv);
-  var cv=M(new THREE.SphereGeometry(0.14,10,8),0xddeeff,0.72,80,'xs_amoe_endo');cv.position.set(-0.5,-0.18,0.09);g.add(cv);
-  var cut=new THREE.Mesh(new THREE.PlaneGeometry(2.8,0.01),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.5}));cut.position.z=0.04;g.add(cut);
-  addLbl([-1.5,0.7,0.1],'Ectoplasm\n(gel-like outer zone)','#d8e8e8','xs_amoe_ecto');
-  addLbl([1.4,0.4,0.1],'Endoplasm\n(fluid inner zone)','#a8c8c8','xs_amoe_endo');
-  addLbl([1.0,-0.8,0.1],'Food vacuole','#22aa44','xs_amoe_endo');
-  addLbl([-1.3,-0.5,0.1],'Contractile vacuole','#88aacc','xs_amoe_endo');
-  return g;
-}
-
-function xsYeast(){
-  var g=new THREE.Group();
-  var wall=M(new THREE.SphereGeometry(0.72,16,12),0x8899aa,0.85,20,'xs_yeast_wall');wall.scale.set(1,1.25,0.5);wall.position.set(-0.3,0,0);g.add(wall);
-  var cyt=M(new THREE.SphereGeometry(0.65,14,10),0xd0e4f0,0.7,8,'xs_yeast_wall');cyt.scale.set(1,1.25,0.5);cyt.position.set(-0.3,0,0);g.add(cyt);
-  var vac=M(new THREE.SphereGeometry(0.3,12,8),0xaabbcc,0.78,40,'xs_yeast_vac');vac.scale.set(1.1,1,0.7);vac.position.set(-0.3,0.1,0.07);g.add(vac);
-  var nuc=M(new THREE.SphereGeometry(0.18,12,8),0x3355aa,0.9,40,'xs_yeast_wall');nuc.position.set(-0.4,-0.2,0.09);g.add(nuc);
-  [[0,0.3,0.1],[-0.55,-0.05,0.09]].forEach(function(p){var mt=M(new THREE.SphereGeometry(0.07,8,6),0xcc4422,0.85,25,'xs_yeast_wall');mt.scale.set(1.6,1,0.7);mt.position.set(p[0]-0.3,p[1],p[2]);g.add(mt);});
-  var bwall=M(new THREE.SphereGeometry(0.42,14,10),0x8899aa,0.8,20,'xs_yeast_wall');bwall.scale.set(0.9,1.1,0.48);bwall.position.set(0.55,0.12,0);g.add(bwall);
-  var bcyt=M(new THREE.SphereGeometry(0.38,12,8),0xd0e4f0,0.7,8,'xs_yeast_wall');bcyt.scale.set(0.9,1.1,0.48);bcyt.position.set(0.55,0.12,0);g.add(bcyt);
-  var scar=M(new THREE.CylinderGeometry(0.12,0.12,0.16,8),0x9aabb0,0.9,10,'xs_yeast_wall');scar.rotation.z=Math.PI/2;scar.position.set(0.08,0.05,0);g.add(scar);
-  var cut=new THREE.Mesh(new THREE.PlaneGeometry(2.5,0.01),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.5}));cut.position.z=0.03;g.add(cut);
-  addLbl([-1.3,0.8,0.1],'Cell wall\n(glucan + mannan)','#8899aa','xs_yeast_wall');
-  addLbl([-1.3,-0.7,0.1],'Large vacuole\n(storage + digestion)','#aabbcc','xs_yeast_vac');
-  addLbl([1.4,0.5,0.1],'Bud (daughter cell)\n+ bud scar','#8899aa','xs_yeast_wall');
-  return g;
-}
-
-function xsBacteria(){
-  var g=new THREE.Group();
-  var len=0.88,rad=0.14;
-  var wallC=M(new THREE.CylinderGeometry(rad+0.032,rad+0.032,len,12),0x557799,0.95,25,'xs_bact_wall');g.add(wallC);
-  var wCT=M(new THREE.SphereGeometry(rad+0.032,10,8),0x557799,0.95,25,'xs_bact_wall');wCT.position.y=len/2;g.add(wCT);
-  var wCB=M(new THREE.SphereGeometry(rad+0.032,10,8),0x557799,0.95,25,'xs_bact_wall');wCB.position.y=-len/2;g.add(wCB);
-  var memC=M(new THREE.CylinderGeometry(rad+0.012,rad+0.012,len,12),0x4488aa,0.9,25,'xs_bact_mem');g.add(memC);
-  var cytC=M(new THREE.CylinderGeometry(rad-0.01,rad-0.01,len*0.98,12),0x3366aa,0.55,10,'xs_bact_mem');g.add(cytC);
-  var nuc=M(new THREE.SphereGeometry(0.08,10,8),0x88aadd,0.82,20,'xs_bact_nuc');nuc.scale.set(1.1,2.4,0.7);g.add(nuc);
-  [[0.06,0.22,0.05],[-0.05,0.35,0.04],[0.07,-0.18,0.05],[-0.06,-0.3,0.04],[0.05,0.05,0.06],[-0.04,-0.05,0.05]].forEach(function(p){
-    var rib=M(new THREE.SphereGeometry(0.018,5,4),0xaaccee,0.9,10,'xs_bact_nuc');rib.position.set(p[0],p[1],p[2]);g.add(rib);
-  });
-  // Transverse section shown to the right
-  var tx=0.6;
-  var tw=M(new THREE.CircleGeometry(rad+0.032,16),0x557799,0.95,20,'xs_bact_wall');tw.position.set(tx,0.5,0);g.add(tw);
-  var tm=M(new THREE.CircleGeometry(rad+0.012,16),0x4488aa,0.9,20,'xs_bact_mem');tm.position.set(tx,0.5,0.01);g.add(tm);
-  var tc=M(new THREE.CircleGeometry(rad-0.01,14),0x3366aa,0.55,10,'xs_bact_mem');tc.position.set(tx,0.5,0.02);g.add(tc);
-  var tn=M(new THREE.CircleGeometry(0.055,10),0x88aadd,0.82,20,'xs_bact_nuc');tn.position.set(tx+0.04,0.5,0.03);g.add(tn);
-  var cut=new THREE.Mesh(new THREE.PlaneGeometry(0.01,0.5),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.5}));cut.rotation.z=Math.PI/2;cut.position.set(tx,0.5,0.05);g.add(cut);
-  addLbl([-0.6,0.9,0.1],'Cell wall\n(peptidoglycan)','#557799','xs_bact_wall');
-  addLbl([-0.6,-0.9,0.1],'Cell membrane\n(only membrane!)','#4488aa','xs_bact_mem');
-  addLbl([0.2,0.2,0.1],'Nucleoid\n(NO nuclear membrane)','#88aadd','xs_bact_nuc');
-  addLbl([1.2,0.5,0.1],'T.S. view','#14b8a6','xs_bact_wall');
-  return g;
-}
-
-function xsPollen(){
-  var g=new THREE.Group();
-  var exine=M(new THREE.SphereGeometry(0.9,20,16),0xffcc22,0.82,50,'xs_poll_exine');g.add(exine);
-  var intine=M(new THREE.SphereGeometry(0.78,18,14),0xffe077,0.75,30,'xs_poll_intine');g.add(intine);
-  var cyt=M(new THREE.SphereGeometry(0.7,16,12),0xffee99,0.5,10,'xs_poll_intine');g.add(cyt);
-  var veg=M(new THREE.SphereGeometry(0.52,14,10),0xdd9900,0.65,20,'xs_poll_veg');veg.position.set(0.06,0.06,0.04);g.add(veg);
-  var veN=M(new THREE.SphereGeometry(0.2,12,8),0xcc8800,0.88,40,'xs_poll_veg');veN.position.set(0.06,0.1,0.06);g.add(veN);
-  var gen=M(new THREE.SphereGeometry(0.16,10,8),0xee6600,0.95,50,'xs_poll_gen');gen.scale.set(1.4,0.9,0.8);gen.position.set(-0.18,-0.18,0.08);g.add(gen);
-  for(var i=0;i<12;i++){var a=i/12*Math.PI*2,ph=i*0.5;var sp=M(new THREE.ConeGeometry(0.022,0.2,4),0xee9900,0.85,10,'xs_poll_exine');var sx=Math.sin(ph)*Math.cos(a)*0.9,sy=Math.cos(ph)*0.9,sz=Math.sin(ph)*Math.sin(a)*0.9;sp.position.set(sx,sy,sz);sp.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(sx,sy,sz).normalize());g.add(sp);}
-  var cutF=new THREE.Mesh(new THREE.CircleGeometry(0.92,32),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.12,side:THREE.DoubleSide}));cutF.rotation.y=Math.PI/2;g.add(cutF);
-  addLbl([-1.4,0.8,0.1],'Exine (thick)\nsporopollenin','#ffcc22','xs_poll_exine');
-  addLbl([1.4,0.6,0.1],'Intine (thin)\ncellulose + pectin','#ffe077','xs_poll_intine');
-  addLbl([0.6,-0.8,0.1],'Generative cell\n→ 2 male gametes','#ee6600','xs_poll_gen');
-  addLbl([-0.5,-0.5,0.1],'Vegetative cell\n(larger)','#dd9900','xs_poll_veg');
-  return g;
-}
-
-function xsFungiHyphae(){
-  var g=new THREE.Group();
-  var hlen=2.6,hrad=0.12;
-  var wallL=M(new THREE.CylinderGeometry(hrad+0.025,hrad+0.025,hlen,12),0x77bbaa,0.9,25,'xs_fung_wall');wallL.position.set(-0.2,0,0);g.add(wallL);
-  var cytL=M(new THREE.CylinderGeometry(hrad,hrad,hlen*0.98,12),0x55aa88,0.65,10,'xs_fung_wall');cytL.position.set(-0.2,0,0);g.add(cytL);
-  [[-0.2,-0.9,0.04],[-0.2,-0.45,0.03],[-0.2,0,0.04],[-0.2,0.45,0.03],[-0.2,0.9,0.04]].forEach(function(p){
-    var nuc=M(new THREE.SphereGeometry(0.055,8,6),0x33aaaa,0.9,30,'xs_fung_nuclei');nuc.position.set(p[0],p[1],p[2]);g.add(nuc);
-  });
-  var twall=M(new THREE.CircleGeometry(hrad+0.025,16),0x77bbaa,0.9,20,'xs_fung_wall');twall.position.set(0.7,0,0);g.add(twall);
-  var tcyt=M(new THREE.CircleGeometry(hrad,14),0x55aa88,0.65,10,'xs_fung_wall');tcyt.position.set(0.7,0,0.01);g.add(tcyt);
-  var tnuc=M(new THREE.CircleGeometry(0.04,10),0x33aaaa,0.9,20,'xs_fung_nuclei');tnuc.position.set(0.74,0.03,0.02);g.add(tnuc);
-  var tsR=new THREE.Mesh(new THREE.RingGeometry(hrad+0.018,hrad+0.032,16),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.4,side:THREE.DoubleSide}));tsR.position.set(0.7,0,0.03);g.add(tsR);
-  var cut=new THREE.Mesh(new THREE.PlaneGeometry(2.6,0.01),new THREE.MeshBasicMaterial({color:0x14b8a6,transparent:true,opacity:0.5}));cut.rotation.z=Math.PI/2;cut.position.set(-0.2,0,0.04);g.add(cut);
-  addLbl([-1.2,1.1,0.1],'Cell wall (chitin)\nnot cellulose!','#77bbaa','xs_fung_wall');
-  addLbl([-1.2,-1.1,0.1],'Multiple nuclei\n(coenocytic — no septa)','#33aaaa','xs_fung_nuclei');
-  addLbl([1.4,0.5,0.1],'T.S. view\n(tube cross-section)','#14b8a6','xs_fung_wall');
-  return g;
-}
-
-var XS_BUILDERS={
-  ONION_CELL:xsOnionCell,CHEEK_CELL:xsCheekCell,BLOOD_SMEAR:xsBloodSmear,
-  STOMATA:xsStomata,AMOEBA:xsAmoeba,YEAST:xsYeast,
-  BACTERIA:xsBacteria,POLLEN:xsPollen,FUNGI_HYPHAE:xsFungiHyphae,
-};
-
-// ── TOGGLE CROSS-SECTION ─────────────────────────────────────────────
-function toggleXS(){
-  _xsMode=!_xsMode;
-  var btn=document.getElementById('xs-btn');
-  btn.classList.toggle('act',_xsMode);
-  btn.textContent=_xsMode?'✂ Full view':'✂ Cross-section';
-
-  if(_xsMode){
-    // Build XS group on demand
-    if(!_xsCache[curSpec]){
-      clearLabels();
-      var xsg=XS_BUILDERS[curSpec]();
-      xsg.rotation.set(curGroup.rotation.x,curGroup.rotation.y,curGroup.rotation.z);
-      // Set initial opacity to 0 for fade-in
-      xsg.traverse(function(o){if(o.isMesh&&o.material){o.material.transparent=true;o.material.opacity=0;}});
-      xsg.visible=true;
-      scene.add(xsg);
-      _xsCache[curSpec]=xsg;
-    } else {
-      clearLabels();
-      XS_BUILDERS[curSpec](); // rebuild labels
-    }
-    _xsGroup=_xsCache[curSpec];
-    _xsGroup.visible=true;
-    _xsGroup.rotation.set(curGroup.rotation.x,curGroup.rotation.y,curGroup.rotation.z);
-    _fadeDir=1; _fadeT=0;
-    // Add XS note to panel
-    var pc=document.getElementById('pc');
-    if(!document.getElementById('xs-note-el')){
-      var note=document.createElement('div');
-      note.className='xs-note';note.id='xs-note-el';
-      note.textContent='✂ Cross-section — tap any structure to learn';
-      pc.prepend(note);
-    }
-  } else {
-    _fadeDir=-1; _fadeT=0;
-    // Restore normal group visibility/opacity
-    if(curGroup){
-      curGroup.visible=true;
-      curGroup.traverse(function(o){if(o.isMesh&&o.material&&o.userData.baseOp!==undefined){o.material.transparent=true;o.material.opacity=0;}});
-    }
-    var el=document.getElementById('xs-note-el');if(el)el.remove();
-    clearLabels();
-    if(curGroup){scene.remove(curGroup);dispose(curGroup);}
-    var g=BUILDERS[curSpec]();
-    g.rotation.set(rotX,rotY,0);
-    scene.add(g);curGroup=g;curSpec=curSpec;
-    // Now fade in from 0
-    curGroup.traverse(function(o){if(o.isMesh&&o.material&&o.userData.baseOp!==undefined){o.material.transparent=true;o.material.opacity=0;}});
-  }
-}
-
+// ═══════════════════════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════════════════════
+requestAnimationFrame(animate);
 </script>
 </body>
 </html>
