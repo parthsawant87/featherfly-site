@@ -120,15 +120,23 @@ body{background:var(--w);color:var(--b);font-family:var(--ff);display:flex;flex-
   <span id="tb-exp">Loading…</span>
   <div class="tb-right">
     <div class="tb-pod"><div class="dot-live"></div><span id="pod-status">Connecting…</span></div>
-    <div class="tb-btn" onclick="location.href='/eduscope/experiments'">← Experiments</div>
-    <div class="tb-btn" onclick="location.href='/'">← Home</div>
+    <div class="tb-btn" onclick="location.href='04c_eduscope_experiments.html'">← Experiments</div>
+    <div class="tb-btn" onclick="location.href='04a_featherfly_in.html'">← Home</div>
   </div>
 </div>
 <div id="layout">
   <div id="left">
     <div class="ph"><div class="dot-live"></div><h2>Microscope Feed</h2></div>
     <div id="stream">
-      <div class="s-ov"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="5"/></svg><span>Connect Pod · 10.42.0.1:8080</span></div>
+      <!-- MJPEG live stream from WhiteMouse Pod -->
+      <img id="camera-feed"
+        style="width:100%;height:100%;object-fit:cover;display:block;"
+        alt="Camera feed"
+        onerror="this.style.display='none';document.getElementById('stream-err').style.display='flex';">
+      <div id="stream-err" class="s-ov" style="display:none;">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="5"/></svg>
+        <span>Pod not reachable · Check Wi-Fi</span>
+      </div>
       <div class="s-badge">LIVE</div><div class="s-conf" id="sconf">–</div>
     </div>
     <button id="cap-btn" onclick="capture()">
@@ -154,7 +162,7 @@ body{background:var(--w);color:var(--b);font-family:var(--ff);display:flex;flex-
     <div id="viewer-wrap">
       <!-- 3D cell viewer — SSE-connected, auto-updates on new specimen -->
       <iframe id="cell-viewer-iframe"
-        src=""
+        src="threejs_cell_viewer.html"
         style="width:100%;height:100%;border:none;border-radius:8px;background:#0a0c10;"
         title="3D Cell Viewer"
         onerror="this.style.display='none';document.getElementById('viewer-ph').style.display='flex';">
@@ -196,6 +204,8 @@ body{background:var(--w);color:var(--b);font-family:var(--ff);display:flex;flex-
 </div>
 <script>
 const API=location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8001':'https://eduscope-api.featherfly.in';
+// WhiteMouse Pod IP — update this if your Pi IP changes
+const CAMERA_URL='http://192.168.87.128:8080';
 const BIO={
   ONION_CELL:{name:'Onion Epidermal Cell',latin:'Allium cepa',ch:'Class 9 · Fundamental Unit of Life',structs:['Cell wall','Cell membrane','Large central vacuole','Nucleus','Cytoplasm'],fact:'The nucleus is pushed to the edge by the large central vacuole. No chloroplasts — onion scale leaves grow underground!',stain:'Iodine or Safranin',icon:'🧅',intro:'You\'re studying onion epidermal cells. Look for the rectangular brick-like shape. The nucleus should appear as a dark oval pushed to one edge by the large central vacuole. Ask me anything about cell structure!'},
   CHEEK_CELL:{name:'Human Cheek Cell',latin:'Buccal epithelial',ch:'Class 9 · Fundamental Unit of Life',structs:['Cell membrane','Nucleus','Cytoplasm','Nuclear membrane'],fact:'No cell wall — animal cells rely on the flexible plasma membrane. You shed and replace these cells every 3–5 days!',stain:'Methylene blue',icon:'🫦',intro:'You\'re looking at your own animal cells! Notice there is NO cell wall. The nucleus should be centrally located and dark blue. What differences do you notice compared to plant cells?'},
@@ -252,7 +262,6 @@ const PRACTICAL={
 const params=new URLSearchParams(window.location.search);
 const EXP_KEY=params.get('exp')||'ONION_CELL';
 const EXP=BIO[EXP_KEY]||BIO['ONION_CELL'];
-document.getElementById('cell-viewer-iframe').src='/eduscope/threejs_cell_viewer.html?specimen='+EXP_KEY;
 
 (function init(){
   document.getElementById('tb-exp').innerHTML=`Experiment: <strong>${EXP.name}</strong>`;
@@ -287,14 +296,29 @@ function updateViewer(key){
 function capture(){
   const btn=document.getElementById('cap-btn');
   btn.textContent='Scanning…';btn.disabled=true;
-  setTimeout(()=>{
-    const conf=0.78+Math.random()*0.2;
-    const keys=Object.keys(BIO);
-    const predicted=Math.random()<0.78?EXP_KEY:keys[Math.floor(Math.random()*keys.length)];
-    showResult(predicted,conf);
-    btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg> Scan Again';
-    btn.disabled=false;
-  },1400);
+  // Call Pi directly — captures frame and runs AI identify
+  fetch(CAMERA_URL+'/capture_and_identify',{signal:AbortSignal.timeout(8000)})
+    .then(r=>r.json())
+    .then(d=>{
+      const specimen=d.specimen||d.predicted_class||d.class||null;
+      const conf=d.confidence||d.conf||0.85;
+      if(specimen&&BIO[specimen]){
+        showResult(specimen,conf);
+        document.getElementById('pod-status').textContent='Pod connected · '+specimen;
+        document.querySelector('.dot-live').style.background='#22c55e';
+      } else {
+        addAI('Scan returned an unrecognised class. Try repositioning the slide.');
+      }
+    })
+    .catch(()=>{
+      document.getElementById('pod-status').textContent='Pod not reachable';
+      document.querySelector('.dot-live').style.background='#888';
+      addAI('Could not reach the WhiteMouse Pod. Make sure it is powered on and you are on the same Wi-Fi.');
+    })
+    .finally(()=>{
+      btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg> Scan Again';
+      btn.disabled=false;
+    });
 }
 
 function showResult(key,conf){
@@ -318,6 +342,16 @@ function showResult(key,conf){
   document.getElementById('sconf').textContent=key+' '+(conf*100).toFixed(0)+'%';
   document.getElementById('rc-tags').innerHTML=s.structs.slice(0,3).map(st=>`<span class="sc-tag">${st.split(' ')[0]}</span>`).join('');
   updateViewer(key);
+  // Update 3D cell viewer iframe
+  const vif=document.getElementById('cell-viewer-iframe');
+  if(vif&&vif.contentWindow){
+    vif.contentWindow.postMessage({
+      type:'FEATHERFLY_SPECIMEN',
+      specimen:key,
+      confidence:conf,
+      chapter:(BIO[key]?BIO[key].ch:'')
+    },'*');
+  }
   const rb=document.getElementById('rpt-btn');rb.style.display='flex';rb.textContent='📄 Generate AI Report';rb.style.background='var(--b)';rb.disabled=false;
   if(match&&conf>=0.80){addAI(`✓ <strong>${s.name}</strong> confirmed at ${(conf*100).toFixed(0)}%. ${s.fact}`);}
   else if(match){addAI(`I can see ${s.name} but confidence is ${(conf*100).toFixed(0)}%. Try adjusting focus or repositioning the slide for a clearer image.`);}
@@ -388,55 +422,22 @@ function switchTab(tab){
   document.getElementById('tab-'+tab).classList.add('act');
 }
 
-// ── SSE LIVE STREAM — ~50ms push vs 3s polling ───────────────────────────
-let _es = null;
-function connectSSE() {
-  _es = new EventSource(API + '/stream');
-  _es.onmessage = function(e) {
-    try {
-      const d = JSON.parse(e.data);
-      if (!d.specimen || !BIO[d.specimen]) return;
-      document.getElementById('pod-status').textContent = 'Pod connected · ' + d.specimen;
-      animateCard();
-      showResult(d.specimen, d.confidence);
-      // smooth confidence bar
-      const bar = document.getElementById('rc-cfill');
-      if (bar) { bar.style.transition = 'width 0.6s cubic-bezier(0.4,0,0.2,1)'; bar.style.width = (d.confidence * 100) + '%'; }
-      // switch 3D viewer if loaded (standalone mode)
-      if (typeof switchCellModel === 'function') switchCellModel(d.specimen);
-      // postMessage to threejs iframe — no double SSE connection needed
-      const vif = document.getElementById('cell-viewer-iframe');
-      if (vif && vif.contentWindow) {
-        vif.contentWindow.postMessage({
-          type: 'FEATHERFLY_SPECIMEN',
-          specimen: d.specimen,
-          confidence: d.confidence,
-          chapter: (typeof BIO !== 'undefined' && BIO[d.specimen]) ? BIO[d.specimen].ch : ''
-        }, '*');
-      }
-      document.querySelector('.dot-live').style.background = '#22c55e';
-    } catch(err) {}
+// ── MJPEG STREAM — connect camera feed on load ───────────────────────────
+(function initCamera(){
+  const img=document.getElementById('camera-feed');
+  if(!img)return;
+  img.src=CAMERA_URL+'/stream';
+  img.onload=function(){
+    document.getElementById('pod-status').textContent='Pod connected';
+    document.querySelector('.dot-live').style.background='#22c55e';
+    document.getElementById('stream-err').style.display='none';
+    img.style.display='block';
   };
-  _es.onerror = function() {
-    document.getElementById('pod-status').textContent = 'Pod not connected';
-    document.querySelector('.dot-live').style.background = '#888';
-    _es.close();
-    // Fallback poll while SSE is down
-    const fb = setInterval(async () => {
-      try {
-        const r = await fetch(API + '/latest', {signal: AbortSignal.timeout(2000)});
-        const d = await r.json();
-        if (d.specimen && BIO[d.specimen]) {
-          document.getElementById('pod-status').textContent = 'Pod connected · ' + d.specimen;
-          animateCard(); showResult(d.specimen, d.confidence);
-        }
-      } catch(e) { document.getElementById('pod-status').textContent = 'Pod not connected'; }
-    }, 3000);
-    setTimeout(() => { clearInterval(fb); connectSSE(); }, 5000);
+  img.onerror=function(){
+    document.getElementById('pod-status').textContent='Pod not reachable';
+    document.querySelector('.dot-live').style.background='#888';
   };
-  _es.onopen = function() { document.querySelector('.dot-live').style.background = '#22c55e'; };
-}
-connectSSE();
+})();
 
 function animateCard() {
   const rc = document.getElementById('result-card') || document.getElementById('rc');
